@@ -8,6 +8,7 @@ public class BizketApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(BizketApplication.class, args);
+
     }
 
 }
