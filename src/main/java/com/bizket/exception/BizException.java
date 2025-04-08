@@ -6,8 +6,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class BizException extends RuntimeException {
 
-    private BizExceptionType bizExceptionType;
-    private String message;
+    private final BizExceptionType bizExceptionType;
+    private final String message;
 
     public BizException(BizExceptionType bizExceptionType) {
         this.bizExceptionType = bizExceptionType;
