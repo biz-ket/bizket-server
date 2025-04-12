@@ -26,5 +26,6 @@ public class Response<T> {
     public static <T> Response<T> of(T data) {
         return Response.of(data, "");
     }
+
 }
 
