@@ -1,7 +1,7 @@
 name: 개발 서버용 CI/CD 파이프라인
 
 on:
-  push:
+  pull_request:
     branches:
       - "release/*"
 
