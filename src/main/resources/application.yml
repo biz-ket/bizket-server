@@ -1,11 +1,11 @@
-# 공통 설정 (모든 프로파일에 적용)
 spring:
+  profiles:
+    active: dev
   application:
     name: bizket
 
 server:
-  port: ${SERVER_PORT}
-
+  port: ${API_SERVER_PORT}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
@@ -28,7 +28,6 @@ spring:
       idle-timeout: 300000
       connection-timeout: 30000
       max-lifetime: 1500000
-
   jpa:
     hibernate:
       ddl-auto: none
