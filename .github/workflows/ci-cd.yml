@@ -51,7 +51,7 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST_DEV }}
-          username: ubuntu
+          username: root
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
             sudo docker ps -a
