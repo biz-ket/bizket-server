@@ -53,6 +53,7 @@ jobs:
           host: ${{ secrets.HOST_DEV }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.PRIVATE_KEY }}
+          passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             sudo docker ps -a
             sudo docker stop $(sudo docker ps -q --filter "name=project") || true
