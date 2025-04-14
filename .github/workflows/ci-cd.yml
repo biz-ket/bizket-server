@@ -56,8 +56,6 @@ jobs:
           passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             sudo docker ps -a
-            sudo docker stop $(sudo docker ps -q --filter "name=bizket-app") || true
-            sudo docker rm $(sudo docker ps -aq --filter "name=bizket-app") || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker run --name bizket-app -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker image prune -f
