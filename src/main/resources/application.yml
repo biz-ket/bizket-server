@@ -19,7 +19,7 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DEV_DB_NAME}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DEV_DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${DEV_DB_USERNAME}
     password: ${DEV_DB_PASSWORD}
     hikari:
@@ -40,7 +40,7 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${TEST_DB_NAME}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${TEST_DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${TEST_DB_USERNAME}
     password: ${TEST_DB_PASSWORD}
 
