@@ -17,7 +17,7 @@ spring:
             client-name: ${APP_NAME}
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "https://385f-119-71-19-199.ngrok-free.app/oauth2/callback/instagram"
+            redirect-uri: ${OAUTH_REDIRECT_URI}
         provider:
           instagram:
             user-name-attribute: id
