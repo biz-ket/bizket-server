@@ -5,6 +5,7 @@ import com.bizket.auth.repository.InstagramTokenRepository;
 import com.bizket.common.member.domain.Member;
 import com.bizket.common.member.repository.MemberRepository;
 import com.bizket.auth.jwt.JwtTokenProvider;
+import com.bizket.exception.BizExceptionType;
 import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -88,13 +89,21 @@ public class AuthService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
+
         try {
             ResponseEntity<Map> tokenResp = restTemplate.postForEntity(tokenUrl, entity, Map.class);
             return tokenResp.getBody();
         } catch (HttpClientErrorException e) {
-            throw new RuntimeException("Instagram access_token 교환 실패: " + e.getResponseBodyAsString());
+            // Instagram API 호출 에러
+            throw BizExceptionType.UNAUTHORIZED.of(
+                "Instagram access_token 교환 실패: " + e.getResponseBodyAsString()
+            );
+        } catch (Exception e) {
+            // 기타 예외
+            throw BizExceptionType.SERVER_ERROR.of(
+                "Instagram access_token 처리 중 오류: " + e.getMessage()
+            );
         }
     }
 
@@ -104,13 +113,17 @@ public class AuthService {
             .queryParam("fields", "id,username")
             .queryParam("access_token", accessToken)
             .toUriString();
-
-        ResponseEntity<Map> userResp = restTemplate.getForEntity(userInfoUrl, Map.class);
-
-        if (!userResp.getStatusCode().is2xxSuccessful() || userResp.getBody() == null) {
-            throw new RuntimeException("Instagram 사용자 정보 조회 실패");
+        try {
+            ResponseEntity<Map> userResp = restTemplate.getForEntity(userInfoUrl, Map.class);
+            if (!userResp.getStatusCode().is2xxSuccessful() || userResp.getBody() == null) {
+                throw BizExceptionType.SERVER_ERROR.of("Instagram 사용자 정보 조회 실패");
+            }
+            return userResp.getBody();
+        } catch (HttpClientErrorException e) {
+            throw BizExceptionType.UNAUTHORIZED.of("Instagram 사용자 정보 조회 실패: " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            throw BizExceptionType.SERVER_ERROR.of("Instagram 사용자 정보 조회 중 오류: " + e.getMessage());
         }
-        return userResp.getBody();
     }
 
     private Member findOrCreateMember(String userId, String username, String provider) {
@@ -126,7 +139,7 @@ public class AuthService {
                     return memberRepository.save(newMember);
                 });
         } catch (Exception ex) {
-            throw new RuntimeException("Member 저장 중 예외 발생", ex);
+            throw BizExceptionType.SERVER_ERROR.of("Member 저장 중 예외 발생: " + ex.getMessage());
         }
     }
 
@@ -156,12 +169,17 @@ public class AuthService {
             .queryParam("access_token", shortLivedToken)
             .toUriString();
 
-        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new RuntimeException("장기 액세스 토큰 교환 실패");
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw BizExceptionType.SERVER_ERROR.of("장기 액세스 토큰 교환 실패");
+            }
+            return (String) response.getBody().get("access_token");
+        } catch (HttpClientErrorException e) {
+            throw BizExceptionType.UNAUTHORIZED.of("장기 액세스 토큰 교환 실패: " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            throw BizExceptionType.SERVER_ERROR.of("장기 토큰 교환 중 오류: " + e.getMessage());
         }
-        return (String) response.getBody().get("access_token");
     }
     private String refreshLongLivedToken(String longLivedToken) {
         String url = UriComponentsBuilder
@@ -170,10 +188,16 @@ public class AuthService {
             .queryParam("access_token", longLivedToken)
             .toUriString();
 
-        ResponseEntity<Map> resp = restTemplate.getForEntity(url, Map.class);
-        if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
-            throw new RuntimeException("장기 토큰 리프레시 실패");
+        try {
+            ResponseEntity<Map> resp = restTemplate.getForEntity(url, Map.class);
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
+                throw BizExceptionType.SERVER_ERROR.of("장기 토큰 리프레시 실패");
+            }
+            return (String) resp.getBody().get("access_token");
+        } catch (HttpClientErrorException e) {
+            throw BizExceptionType.UNAUTHORIZED.of("장기 토큰 리프레시 실패: " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            throw BizExceptionType.SERVER_ERROR.of("장기 토큰 리프레시 중 오류: " + e.getMessage());
         }
-        return (String) resp.getBody().get("access_token");
     }
 }
