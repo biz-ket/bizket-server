@@ -28,7 +28,7 @@ public class Member extends BaseEntity {
     @Column(nullable = false, length = 255)
     private String nickname;
 
-    @Column(nullable = false, length = 255, unique = true)
+    @Column(nullable = true, length = 255, unique = true)
     private String email;
 
     @Column(name = "profile_image_url", length = 500)
