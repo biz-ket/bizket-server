@@ -36,7 +36,8 @@ logging:
     org.apache.http: DEBUG
 jwt:
   secret: ${JWT_SECRET_KEY}
-  expiration: ${JWT_ACCESS_EXPIRATION_TIME}
+  access-expiration-ms: ${JWT_ACCESS_EXPIRATION_TIME}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_TIME}
 ---
 
 spring:
