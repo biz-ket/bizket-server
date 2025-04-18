@@ -25,10 +25,10 @@ public class OAuthController {
 
     @Value("${spring.security.oauth2.client.registration.instagram.redirect-uri}")
     private String redirectUri;
+
     @GetMapping("/api/auth/instagram/login")
     public void login(HttpServletResponse response) throws IOException {
         String state = UUID.randomUUID().toString();  // CSRF 방어용
-
         String authorizeUrl = UriComponentsBuilder
             .fromHttpUrl("https://www.instagram.com/oauth/authorize")
             .queryParam("enable_fb_login", 0)
@@ -46,22 +46,17 @@ public class OAuthController {
             .queryParam("state", state)
             .build()
             .toUriString();
-
         response.sendRedirect(authorizeUrl);
     }
 
-
-    /**
-     * 3) 인스타그램이 이 URI로 인가코드를 돌려줌 → AuthService로 위임
-     */
-    @GetMapping("/oauth2/callback/instagram")
-    public AuthResponse callback(@RequestParam("code") String code) {
-        return authService.loginWithInstagramCode(code);
-    }
-
-    // 프론트엔드로 리다이렉트 uri 변경 시 적용
-    @PostMapping("/oauth2/instagram")
+    @PostMapping("/api/auth/instagram/exchange")
     public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
         return authService.loginWithInstagramCode(request.getCode());
     }
+
+//    프론트엔드로 리다이렉트 uri 변경 시 적용
+//    @PostMapping("/oauth2/instagram")
+//    public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
+//        return authService.loginWithInstagramCode(request.getCode());
+//    }
 }
