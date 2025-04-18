@@ -1,5 +1,6 @@
 package com.bizket.auth.jwt;
 
+import com.bizket.exception.BizException;
 import com.bizket.exception.BizExceptionType;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -28,16 +29,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = tokenProvider.resolveToken(request);
 
         try {
-            if (token != null && tokenProvider.validateToken(token)) {
-                Authentication auth = tokenProvider.getAuthentication(token);
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            if (token == null) {
+                throw BizExceptionType.UNAUTHORIZED_TOKEN_MISSING.of();
+            }
+            if (!tokenProvider.validateToken(token)) {
+                throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
             }
         } catch (ExpiredJwtException ex) {
             SecurityContextHolder.clearContext();
-            throw BizExceptionType.UNAUTHORIZED.of("토큰이 만료되었습니다.");
+            throw BizExceptionType.UNAUTHORIZED_TOKEN_EXPIRED.of();
         } catch (JwtException ex) {
             SecurityContextHolder.clearContext();
-            throw BizExceptionType.UNAUTHORIZED.of("유효하지 않은 토큰입니다.");
+            throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
+        } catch (BizException ex) {
+            SecurityContextHolder.clearContext();
+            throw ex;
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
             throw BizExceptionType.SERVER_ERROR.of("토큰 처리 중 오류가 발생했습니다.");
