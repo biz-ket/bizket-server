@@ -144,21 +144,22 @@ public class AuthService {
     }
 
     private AuthResponse buildAuthResponse(Member member, String jwt) {
-        return AuthResponse.builder()
-            .jwtToken(jwt)
-            .tokenType("Bearer")
-            .memberId(member.getId())
-            .nickname(member.getNickname())
-            .email(member.getEmail())
-            .build();
+        return new AuthResponse(
+            jwt, "Bearer", member.getId(), member.getNickname(), member.getEmail());
     }
 
     private void saveOrUpdateLongToken(Member member, String longLivedToken) {
-        InstagramToken token = instagramTokenRepository.findById(member.getId())
-            .orElse(new InstagramToken(member));
-        token.setAccessToken(longLivedToken);
-        token.setExpiresAt(LocalDateTime.now().plusDays(60));
-        instagramTokenRepository.save(token);
+        instagramTokenRepository.findById(member.getId())
+            .ifPresentOrElse(
+                token -> token.renew(longLivedToken,
+                    LocalDateTime.now().plusDays(60)),
+                () -> instagramTokenRepository.save(
+                    InstagramToken.builder()
+                        .member(member)
+                        .accessToken(longLivedToken)
+                        .expiresAt(LocalDateTime.now().plusDays(60))
+                        .build())
+            );
     }
 
     private String exchangeToLongLivedToken(String shortLivedToken) {
