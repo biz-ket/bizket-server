@@ -9,17 +9,21 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
-@Setter
+@Builder
 @NoArgsConstructor
+@Entity
 public class InstagramToken {
     @Id
-    private Long memberId;
+    private Long Id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
@@ -36,4 +40,8 @@ public class InstagramToken {
         this.member = member;
     }
 
+    public void renew(String newToken, LocalDateTime newExpiry) {
+        this.accessToken = newToken;
+        this.expiresAt  = newExpiry;
+    }
 }
