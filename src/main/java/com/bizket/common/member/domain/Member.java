@@ -40,9 +40,9 @@ public class Member extends BaseEntity {
     @Column(name = "provider_id", nullable = false)
     private String providerId;
 
-//    @Column(name = "business_place_id")
-//    private Long businessPlaceId;
-//
-//    @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT FALSE")
-//    private Boolean isDeleted;
+    @Column(name = "business_place_id")
+    private Long businessPlaceId;
+
+    @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isDeleted;
 }

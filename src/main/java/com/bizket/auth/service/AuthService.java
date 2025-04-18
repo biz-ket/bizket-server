@@ -120,7 +120,6 @@ public class AuthService {
                 .orElseGet(() -> {
                     Member newMember = Member.builder()
                         .nickname(username)
-                        .email(username + "@instagram.local")
                         .oauth2Provider(provider)
                         .providerId(userId)
                         .build();
