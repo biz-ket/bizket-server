@@ -1,5 +1,8 @@
 package com.bizket.auth.jwt;
 
+import com.bizket.exception.BizExceptionType;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,35 +20,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
     }
-
-
     @Override
     protected void doFilterInternal(HttpServletRequest request,
         HttpServletResponse response,
         FilterChain filterChain)
         throws ServletException, IOException {
-        System.out.println("[JwtFilter] URI = " + request.getRequestURI());
-        System.out.println("[JwtFilter] Authorization 헤더 = " + request.getHeader("Authorization"));
-
         String token = tokenProvider.resolveToken(request);
-
-        System.out.println("[JwtFilter] Extracted token = " + token);
 
         try {
             if (token != null && tokenProvider.validateToken(token)) {
                 Authentication auth = tokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                System.out.println("[JwtFilter] SecurityContext 인증 완료: " + auth);
-
             }
-        } catch (Exception ex) {
-            // 검증 중 문제가 발생하면 SecurityContext 초기화
+        } catch (ExpiredJwtException ex) {
             SecurityContextHolder.clearContext();
-            System.out.println("[JwtFilter] Token validation error: " + ex.getMessage());
-
-            // 예외를 상위로 전달하여 JwtExceptionHandler에서 처리
-            throw ex;
+            throw BizExceptionType.UNAUTHORIZED.of("토큰이 만료되었습니다.");
+        } catch (JwtException ex) {
+            SecurityContextHolder.clearContext();
+            throw BizExceptionType.UNAUTHORIZED.of("유효하지 않은 토큰입니다.");
+        } catch (Exception ex) {
+            SecurityContextHolder.clearContext();
+            throw BizExceptionType.SERVER_ERROR.of("토큰 처리 중 오류가 발생했습니다.");
         }
+
         filterChain.doFilter(request, response);
     }
 }
