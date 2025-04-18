@@ -4,21 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * 로그인 성공 시 클라이언트에 반환되는 응답 DTO
- */
-@Getter
-@Builder
-@AllArgsConstructor
-public class AuthResponse {
-    // jwt token
-    private final String jwtToken;
-
-    private final String tokenType;
-
-    private final Long memberId;
-
-    private final String nickname;
-
-    private final String email;
+public record AuthResponse(
+    String jwtToken,
+    String tokenType,
+    Long memberId,
+    String nickname,
+    String email
+) {
+    /* 필요 시, 추가 로직이나 별도 정적 팩토리를 정의할 수 있음. 예: */
+    public static AuthResponse ofBearer(String token,
+        Long memberId,
+        String nickname,
+        String email) {
+        return new AuthResponse(token, "Bearer", memberId, nickname, email);
+    }
 }
