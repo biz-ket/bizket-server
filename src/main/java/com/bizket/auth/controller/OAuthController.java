@@ -26,7 +26,7 @@ public class OAuthController {
     @Value("${spring.security.oauth2.client.registration.instagram.redirect-uri}")
     private String redirectUri;
 
-    @GetMapping("/api/auth/instagram/login")
+    @GetMapping("/auth/instagram/login")
     public void login(HttpServletResponse response) throws IOException {
         String state = UUID.randomUUID().toString();  // CSRF 방어용
         String authorizeUrl = UriComponentsBuilder
@@ -49,7 +49,7 @@ public class OAuthController {
         response.sendRedirect(authorizeUrl);
     }
 
-    @PostMapping("/api/auth/instagram/exchange")
+    @PostMapping("/auth/instagram/exchange")
     public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
         return authService.loginWithInstagramCode(request.getCode());
     }
