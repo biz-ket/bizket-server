@@ -8,14 +8,12 @@ public record AuthResponse(
     String jwtToken,
     String tokenType,
     Long memberId,
-    String nickname,
-    String email
+    String nickname
 ) {
     /* 필요 시, 추가 로직이나 별도 정적 팩토리를 정의할 수 있음. 예: */
     public static AuthResponse ofBearer(String token,
         Long memberId,
-        String nickname,
-        String email) {
-        return new AuthResponse(token, "Bearer", memberId, nickname, email);
+        String nickname) {
+        return new AuthResponse(token, "Bearer", memberId, nickname);
     }
 }

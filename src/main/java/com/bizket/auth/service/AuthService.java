@@ -145,7 +145,7 @@ public class AuthService {
 
     private AuthResponse buildAuthResponse(Member member, String jwt) {
         return new AuthResponse(
-            jwt, "Bearer", member.getId(), member.getNickname(), member.getEmail());
+            jwt, "Bearer", member.getId(), member.getNickname());
     }
 
     private void saveOrUpdateLongToken(Member member, String longLivedToken) {

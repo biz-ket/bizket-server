@@ -53,10 +53,4 @@ public class OAuthController {
     public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
         return authService.loginWithInstagramCode(request.getCode());
     }
-
-//    프론트엔드로 리다이렉트 uri 변경 시 적용
-//    @PostMapping("/oauth2/instagram")
-//    public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
-//        return authService.loginWithInstagramCode(request.getCode());
-//    }
 }
