@@ -53,8 +53,8 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
-            echo "${{ secrets.DEV_ENV }}" > .env
-            sudo docker ps -a
+            echo "${{ secrets.DEV_ENV }}" | base64 -d > .env
+            
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker stop bizket-app || true
             sudo docker rm   bizket-app || true
