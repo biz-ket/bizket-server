@@ -1,6 +1,7 @@
 package com.bizket.auth.config;
 
 public final class SecurityConstant {
+
     public static final String[] WHITE_LIST = {
         "/api/oauth2/authorization/**",
         "/api/login/oauth2/code/**",
@@ -10,6 +11,7 @@ public final class SecurityConstant {
         "/favicon.ico",
         "/error",
         "/auth/instagram/login",
-        "/auth/instagram/exchange"
+        "/auth/instagram/exchange",
+        "/test"
     };
 }
