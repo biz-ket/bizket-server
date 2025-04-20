@@ -25,7 +25,7 @@ public class JwtTokenProvider {
     private String secretKey;
 
     @Value("${jwt.access-expiration-ms}")
-    private long validityInMilliseconds;
+    private Long validityInMilliseconds;
 
     private Key signingKey;
 
@@ -34,6 +34,8 @@ public class JwtTokenProvider {
         // Base64 디코딩 후 키 초기화
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         signingKey = Keys.hmacShaKeyFor(keyBytes);
+        log.info("secretKey: {}", secretKey);
+        log.info("validityInMilliseconds: {}", validityInMilliseconds);
     }
 
     /**
@@ -46,7 +48,6 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims().setSubject(memberId).build();
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validityInMilliseconds);
-        log.info("validityInMilliseconds: {}", validityInMilliseconds);
         return Jwts.builder()
             .setClaims(claims)
             .setIssuedAt(now)
