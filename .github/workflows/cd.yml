@@ -55,5 +55,7 @@ jobs:
           script: |
             sudo docker ps -a
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
+            sudo docker stop bizket-app || true
+            sudo docker rm   bizket-app || true
             sudo docker run --name bizket-app -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker image prune -f
