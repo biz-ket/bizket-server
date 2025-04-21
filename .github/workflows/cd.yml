@@ -62,6 +62,7 @@ jobs:
             sudo docker run --name bizket-app -d \
               -p 8080:8080 \
               --network root-network \
-              --env-file $(pwd)/.env \
+              --env-file /home/ubuntu/bizket.env \
+              -v /home/ubuntu/bizket.env:/app/.env \
               ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker image prune -f
