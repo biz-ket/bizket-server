@@ -1,4 +1,4 @@
-name: CD
+name: CI-CD
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
           passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             cd /root
-            
+            grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean
             sudo docker stop bizket-app || true
             sudo docker rm bizket-app || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
