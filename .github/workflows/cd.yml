@@ -59,4 +59,10 @@ jobs:
               --network root-network \
               --env-file .env \
               ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
+              -c "/wait-for-it.sh bizket-db:3306 -- \
+                java \
+                  -Djwt.secret=\"$JWT_SECRET_KEY\" \
+                  -Djwt.access-expiration-ms=\"$JWT_ACCESS_EXPIRATION_TIME\" \
+                  -Djwt.refresh-expiration-ms=\"$JWT_REFRESH_EXPIRATION_TIME\" \
+                  -jar app.jar"
             sudo docker image prune -f
