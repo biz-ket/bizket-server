@@ -28,9 +28,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: application.yml 생성 !
+      - name: application-secret.yml 생성
         run: |
-          echo "${{ secrets.APPLICATION }}" > ./src/main/resources/application.yml
+          echo "${{ secrets.APPLICATION_SECRET_YML }}" > ./src/main/resources/application-secret.yml
 
       - name: Gradle 빌드
         run: ./gradlew build -x test
