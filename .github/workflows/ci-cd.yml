@@ -40,6 +40,12 @@ jobs:
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           docker build --platform linux/amd64 -t "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest" .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest"
+          
+          docker build --platform linux/amd64 \
+            -f pytrends_service/Dockerfile \
+            -t "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest" \
+            pytrends_service
+          docker push "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest"
 
       - name: 서버 배포
         uses: appleboy/ssh-action@master
@@ -65,4 +71,12 @@ jobs:
                   -Djwt.access-expiration-ms=\"$JWT_ACCESS_EXPIRATION_TIME\" \
                   -Djwt.refresh-expiration-ms=\"$JWT_REFRESH_EXPIRATION_TIME\" \
                   -jar app.jar"
+            sudo docker stop pytrends-app    || true
+            sudo docker rm   pytrends-app    || true
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
+            sudo docker run --name pytrends-app -d \
+              -p 5000:5000 \
+              --network root-network \
+              ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
+            
             sudo docker image prune -f
