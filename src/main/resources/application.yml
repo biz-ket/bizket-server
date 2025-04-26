@@ -24,6 +24,8 @@ spring:
             authorization-uri: https://api.instagram.com/oauth/authorize
             token-uri: https://api.instagram.com/oauth/access_token
             user-info-uri: https://graph.instagram.com/me
+py:
+  trends-service-url: http://localhost:5000
 
 server:
   port: 8080
