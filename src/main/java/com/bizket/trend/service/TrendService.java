@@ -28,6 +28,5 @@ public class TrendService {
                 new ParameterizedTypeReference<>() {}
         );
         return resp.getBody();
-
     }
 }
