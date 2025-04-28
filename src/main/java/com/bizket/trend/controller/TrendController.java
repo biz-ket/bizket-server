@@ -13,6 +13,7 @@ public class TrendController {
 
     private final TrendService trendService;
 
+
     public TrendController(TrendService trendService) {
         this.trendService = trendService;
     }
