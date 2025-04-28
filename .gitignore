@@ -39,4 +39,5 @@ out/
 .env
 entrypoint.sh
 
-*.yml
+application.yml
+application-secret.yml
