@@ -6,7 +6,6 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# 타임존 0, 언어 en-US (필요에 따라 ko 사용 가능)
 pytrends = TrendReq(hl='en-US', tz=0)
 
 @app.route('/ping')
@@ -20,7 +19,8 @@ def monthly():
         return 'keyword query param required', 400
 
     try:
-        # 지난 12개월
+        # 지난 12개월의 관심 지표
+        # 검색 횟수는 유료 - G.Ads keyword planner api
         pytrends.build_payload([kw], cat=0, timeframe='today 12-m', geo='')
         df = pytrends.interest_over_time()
         # 빈 데이터프레임인 경우
@@ -40,5 +40,4 @@ def monthly():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PY_SERVICE_PORT', 5000))
-    # 0.0.0.0 로 바인딩하면 외부(다른 컨테이너나 Java 앱)에서도 접근 가능
     app.run(host='0.0.0.0', port=port)
