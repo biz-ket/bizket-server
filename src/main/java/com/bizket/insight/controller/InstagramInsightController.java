@@ -55,15 +55,9 @@ public class InstagramInsightController {
         return ResponseEntity.ok(mediaData);
     }
 
-    /**
-     * 특정 미디어 ID의 인사이트(좋아요, 참여도 등) 가져오기
-     */
-    @GetMapping("/me/media/{mediaId}/insights")
-    public ResponseEntity<JsonNode> getOneMediaInsights(
-        HttpServletRequest request,
-        @PathVariable String mediaId,
-        @RequestParam(defaultValue = "engagement,reach,comments") String metrics,
-        @RequestParam(defaultValue = "day") String period      // ← period 파라미터 추가
+    @GetMapping("/me/media-with-insights")
+    public ResponseEntity<JsonNode> getAllMediaWithInsights(
+        HttpServletRequest request
     ) {
         // 1) JWT 추출
         String jwt = jwtTokenProvider.resolveToken(request);
@@ -71,22 +65,30 @@ public class InstagramInsightController {
             return ResponseEntity.badRequest().body(null);
         }
 
-        // 2) AccessToken 획득
+        // 2) Service 호출 (metrics, period 파라미터 제거)
+        JsonNode combined = insightService.getAllMediaWithInsights(jwt);
+
+        // 3) 응답
+        return ResponseEntity.ok(combined);
+    }
+    /**
+     * 특정 미디어 ID의 인사이트(댓글·좋아요·공유·저장) 가져오기
+     */
+    @GetMapping("/me/media/{mediaId}/insights")
+    public ResponseEntity<JsonNode> getOneMediaInsights(
+        HttpServletRequest request,
+        @PathVariable String mediaId
+    ) {
+        String jwt = jwtTokenProvider.resolveToken(request);
+        if (jwt == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
         String accessToken = insightService.resolveAccessToken(jwt);
-
-        // 3) metrics → 리스트
-        List<String> metricList = Arrays.asList(metrics.split(","));
-
-        // 4) 서비스 호출 시 period 포함
-        JsonNode insights = insightService.getMediaInsights(
-            mediaId,
-            metricList,
-            period,         // ← 추가
-            accessToken
-        );
-
+        JsonNode insights = insightService.getMediaInsights(mediaId, accessToken);
         return ResponseEntity.ok(insights);
     }
+
 
 }
 
