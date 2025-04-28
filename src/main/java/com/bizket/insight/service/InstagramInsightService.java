@@ -6,12 +6,15 @@ import com.bizket.auth.repository.InstagramTokenRepository;
 import com.bizket.common.member.domain.Member;
 import com.bizket.common.member.repository.MemberRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Slf4j
 @AllArgsConstructor
@@ -24,6 +27,51 @@ public class InstagramInsightService {
     private final InstagramTokenRepository tokenRepo;
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /**
+     * 사용자의 모든 미디어 + 각 미디어 인사이트를 합쳐서 반환
+     */
+    public JsonNode getAllMediaWithInsights(String jwtToken) {
+        // 1) 액세스 토큰 획득
+        String accessToken = resolveAccessToken(jwtToken);
+
+        // 2) 미디어 목록 조회
+        JsonNode mediaArray = getUserMedia(accessToken);  // ArrayNode
+
+        // 3) 결과를 담을 ArrayNode
+        ArrayNode result = MAPPER.createArrayNode();
+
+        // 4) 각 미디어에 대해 인사이트 조회 후, 배열 풀어서 merged 노드에 넣기
+        for (JsonNode media : mediaArray) {
+            String mediaId = media.get("id").asText();
+            JsonNode insights = getMediaInsights(mediaId, accessToken);
+
+            // media 필드를 ObjectNode 로 복사
+            ObjectNode merged = MAPPER.createObjectNode();
+            media.fieldNames().forEachRemaining(field ->
+                merged.set(field, media.get(field))
+            );
+
+            // insights 배열을 순회하며 name:value 형태로 바로 put()
+            for (JsonNode metricNode : insights) {
+                String name = metricNode.get("name").asText();
+                int value  = metricNode
+                    .get("values")
+                    .get(0)
+                    .get("value")
+                    .asInt();
+                merged.put(name, value);
+            }
+
+            // platform 필드 추가
+            merged.put("platform", "instagram");
+
+            result.add(merged);
+        }
+
+        return result;
+    }
 
     /**
      * Account insights 조회 (JWT 기반)
@@ -140,22 +188,35 @@ public class InstagramInsightService {
     /**
      * 특정 미디어 ID의 인사이트 조회 (metrics + period)
      */
-    public JsonNode getMediaInsights(String mediaId, List<String> metrics, String period, String accessToken) {
-        log.debug("[Step] calling Media Insights API for mediaId={}", mediaId);
+    /**
+     * 특정 미디어 ID의 인사이트 조회 (comments, likes, shares, saved, lifetime 고정)
+     */
+    /**
+     * 특정 미디어 ID의 인사이트 조회 (comments, likes, shares, saved, lifetime 고정)
+     */
+    public JsonNode getMediaInsights(String mediaId, String accessToken) {
+        List<String> fixedMetrics = List.of("comments", "likes", "shares", "saved");
+        String fixedPeriod = "lifetime";
+
+        log.debug("[Fixed Media Insights] mediaId={}, metrics={}, period={}",
+            mediaId, fixedMetrics, fixedPeriod);
+
         String url = UriComponentsBuilder
             .fromHttpUrl(GRAPH_API_HOST + "/" + API_VERSION + "/" + mediaId + "/insights")
-            .queryParam("metric", String.join(",", metrics))
-            .queryParam("period", period)
+            .queryParam("metric", String.join(",", fixedMetrics))
+            .queryParam("period", fixedPeriod)
             .queryParam("access_token", accessToken)
             .toUriString();
         log.debug("→ GET {}", url);
 
         JsonNode response = rt.getForObject(url, JsonNode.class);
         if (response == null || response.get("data") == null) {
-            log.error("Media Insights API 호출 실패 for mediaId={}", mediaId);
+            log.error("Fixed Media Insights API 호출 실패 for mediaId={}", mediaId);
             throw new IllegalStateException("인사이트 데이터를 가져오지 못했습니다.");
         }
-        log.debug("[Step] Media Insights response: {}", response);
+        log.debug("[Fixed Media Insights response] {}", response);
         return response.get("data");
     }
+
+
 }
