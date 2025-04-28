@@ -38,3 +38,5 @@ out/
 
 .env
 entrypoint.sh
+
+*.yml
