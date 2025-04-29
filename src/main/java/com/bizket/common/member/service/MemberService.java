@@ -89,4 +89,10 @@ public class MemberService {
             member.updateBusinessPlace(null);
         }
     }
+
+    @Transactional
+    public void updateMemberInfo(String jwtToken, MemberDto dto) {
+        Member member = getMemberFromToken(jwtToken);
+        member.updateInfo(dto);
+    }
 }

@@ -88,4 +88,15 @@ public class MemberController {
         }
         throw new IllegalArgumentException("JWT 토큰이 없습니다.");
     }
+
+    @PatchMapping("/member/me")
+    public ResponseEntity<Void> updateMemberInfo(
+        HttpServletRequest request,
+        @RequestBody MemberDto dto
+    ) {
+        String jwtToken = resolveJwt(request);
+        memberService.updateMemberInfo(jwtToken, dto);
+        return ResponseEntity.ok().build();
+    }
+
 }

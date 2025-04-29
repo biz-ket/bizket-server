@@ -2,6 +2,7 @@ package com.bizket.common.member.domain;
 
 import static jakarta.persistence.FetchType.*;
 
+import com.bizket.common.member.dto.MemberDto;
 import com.bizket.common.model.BaseEntity;
 import com.bizket.insight.domain.BusinessPlace;
 import jakarta.persistence.CascadeType;
@@ -69,6 +70,15 @@ public class Member extends BaseEntity {
             this.nickname = nickname;
         }
     }
+
+    public void updateInfo(MemberDto dto) {
+        if (dto.nickname() != null) this.nickname = dto.nickname();
+        if (dto.email() != null) this.email = dto.email();
+        if (dto.profileImageUrl() != null) this.profileImageUrl = dto.profileImageUrl();
+        if (dto.instagramAccountId() != null) this.instagramAccountId = dto.instagramAccountId();
+        if (dto.threadsAccountId() != null) this.threadsAccountId = dto.threadsAccountId();
+    }
+
 
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isDeleted;
