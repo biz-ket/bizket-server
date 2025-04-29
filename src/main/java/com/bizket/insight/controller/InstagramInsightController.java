@@ -89,6 +89,19 @@ public class InstagramInsightController {
         return ResponseEntity.ok(insights);
     }
 
+    /**
+     * 현재 사용자의 Instagram 팔로워 수 가져오기
+     */
+    @GetMapping("/me/followers-count")
+    public ResponseEntity<Integer> getFollowerCount(HttpServletRequest request) {
+        String jwt = jwtTokenProvider.resolveToken(request);
+        if (jwt == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
+        int followerCount = insightService.getFollowerCount(jwt);
+        return ResponseEntity.ok(followerCount);
+    }
 
 }
 
