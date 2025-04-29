@@ -1,6 +1,7 @@
 package com.bizket.insight.domain;
 
 import com.bizket.common.member.domain.Member;
+import com.bizket.common.member.dto.BusinessProfileDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -46,4 +47,14 @@ public class BusinessPlace {
     private String placePhoneNumber;
     @OneToOne(mappedBy = "businessPlace")
     private Member member;
+
+    public void update(BusinessProfileDto dto) {
+        if (dto.placeName() != null) this.placeName = dto.placeName();
+        if (dto.businessInfo() != null) this.businessInfo = dto.businessInfo();
+        if (dto.customerAgeGroup() != null) this.customerAgeGroup = dto.customerAgeGroup();
+        if (dto.openDate() != null) this.openDate = dto.openDate();
+        if (dto.address() != null) this.address = dto.address();
+        if (dto.placeEmail() != null) this.placeEmail = dto.placeEmail();
+        if (dto.placePhoneNumber() != null) this.placePhoneNumber = dto.placePhoneNumber();
+    }
 }
