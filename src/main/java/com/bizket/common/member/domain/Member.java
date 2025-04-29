@@ -64,6 +64,12 @@ public class Member extends BaseEntity {
         this.threadsAccountId = threadsAccountId;
     }
 
+    public void updateNickname(String nickname) {
+        if (nickname != null && !nickname.isBlank()) {
+            this.nickname = nickname;
+        }
+    }
+
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isDeleted;
 }
