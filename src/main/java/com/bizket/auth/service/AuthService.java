@@ -130,11 +130,19 @@ public class AuthService {
         try {
             return memberRepository
                 .findByProviderIdAndOauth2Provider(userId, provider)
+                .map(existingMember -> {
+                    if (existingMember.getInstagramAccountId() == null) {
+                        existingMember.updateSnsAccount(userId, existingMember.getThreadsAccountId());
+                        memberRepository.save(existingMember);
+                    }
+                    return existingMember;
+                })
                 .orElseGet(() -> {
                     Member newMember = Member.builder()
                         .nickname(username)
                         .oauth2Provider(provider)
                         .providerId(userId)
+                        .instagramAccountId(userId)
                         .build();
                     return memberRepository.save(newMember);
                 });
@@ -142,6 +150,7 @@ public class AuthService {
             throw BizExceptionType.SERVER_ERROR.of("Member 저장 중 예외 발생: " + ex.getMessage());
         }
     }
+
 
     private AuthResponse buildAuthResponse(Member member, String jwt) {
         return new AuthResponse(
