@@ -218,5 +218,28 @@ public class InstagramInsightService {
         return response.get("data");
     }
 
+    /**
+     * Instagram 비즈니스 계정의 현재 팔로워 수를 가져온다.
+     */
+    public int getFollowerCount(String jwtToken) {
+        String accessToken = resolveAccessToken(jwtToken);
+        String userId = fetchInstagramUserId(accessToken);
+
+        String url = UriComponentsBuilder
+            .fromHttpUrl("https://graph.instagram.com/" + API_VERSION + "/" + userId)
+            .queryParam("fields", "followers_count")
+            .queryParam("access_token", accessToken)
+            .toUriString();
+
+        log.debug("→ GET {}", url);
+
+        JsonNode response = rt.getForObject(url, JsonNode.class);
+        if (response == null || response.get("followers_count") == null) {
+            log.error("followers_count 가져오기 실패");
+            throw new IllegalStateException("팔로워 수를 가져오지 못했습니다.");
+        }
+
+        return response.get("followers_count").asInt();
+    }
 
 }
