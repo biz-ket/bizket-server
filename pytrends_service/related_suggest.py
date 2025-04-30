@@ -1,5 +1,4 @@
-##### 주의!!!!! 한국어 키워드 불가
-##### naver, bing등 시도해보았지만 결국 유료서비스
+# related_suggest.py
 import requests
 from flask import Blueprint, request, jsonify
 
