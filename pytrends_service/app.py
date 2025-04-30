@@ -2,8 +2,6 @@
 from flask import Flask
 from flask_cors import CORS
 
-from monthly import monthly_bp
-from region import region_bp
 from related_suggest   import related_bp
 
 import os
@@ -12,8 +10,6 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-app.register_blueprint(monthly_bp)
-app.register_blueprint(region_bp)
 app.register_blueprint(related_bp)   # /related trending
 
 if __name__ == '__main__':
