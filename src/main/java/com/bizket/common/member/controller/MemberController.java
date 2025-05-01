@@ -1,21 +1,21 @@
 package com.bizket.common.member.controller;
 
 
-import com.bizket.common.member.domain.Member;
-import com.bizket.common.member.dto.BusinessProfileDto;
-import com.bizket.common.member.dto.MemberDto;
-import com.bizket.common.member.dto.MypageDto;
-import com.bizket.common.member.dto.BusinessProfileResponse;
+import com.bizket.insight.dto.BusinessProfileDto;
+import com.bizket.insight.dto.MemberDto;
+import com.bizket.insight.dto.MemberPatchDto;
+import com.bizket.common.member.dto.MessageResponse;
+import com.bizket.insight.dto.MypageDto;
 import com.bizket.common.member.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,14 +31,12 @@ public class MemberController {
         return ResponseEntity.ok(response);
     }
 
-
     @GetMapping("/business-report/me/profile")
     public ResponseEntity<?> getMyBusinessProfile(HttpServletRequest request) {
         String jwtToken = resolveJwt(request);
         Object response = memberService.getMyBusinessProfile(jwtToken);
         return ResponseEntity.ok(response);
     }
-
 
     @GetMapping("/mypage/me")
     public ResponseEntity<MypageDto> getMyMypage(HttpServletRequest request) {
@@ -59,8 +57,8 @@ public class MemberController {
         HttpServletRequest request,
         @RequestBody BusinessProfileDto dto
     ) {
-        String jwtToken = resolveJwt(request);
-        memberService.updateBusinessPlace(jwtToken, dto);
+        String jwt = resolveJwt(request);
+        memberService.updateBusinessPlace(jwt, dto);
         return ResponseEntity.ok().build();
     }
 
@@ -69,8 +67,8 @@ public class MemberController {
         HttpServletRequest request,
         @RequestBody BusinessProfileDto dto
     ) {
-        String jwtToken = resolveJwt(request);
-        memberService.createBusinessPlace(jwtToken, dto);
+        String jwt = resolveJwt(request);
+        memberService.createBusinessPlace(jwt, dto);
         return ResponseEntity.ok().build();
     }
 
@@ -92,11 +90,17 @@ public class MemberController {
     @PatchMapping("/member/me")
     public ResponseEntity<Void> updateMemberInfo(
         HttpServletRequest request,
-        @RequestBody MemberDto dto
+        @RequestBody MemberPatchDto dto
     ) {
         String jwtToken = resolveJwt(request);
         memberService.updateMemberInfo(jwtToken, dto);
         return ResponseEntity.ok().build();
     }
 
+    @ExceptionHandler({ IllegalArgumentException.class, IllegalStateException.class })
+    public ResponseEntity<MessageResponse> handleBadRequest(Exception ex) {
+        return ResponseEntity
+            .badRequest()
+            .body(new MessageResponse(ex.getMessage()));
+    }
 }
