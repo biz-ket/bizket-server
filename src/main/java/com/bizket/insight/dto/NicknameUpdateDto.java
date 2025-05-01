@@ -1,4 +1,4 @@
-package com.bizket.common.member.dto;
+package com.bizket.insight.dto;
 
 public record NicknameUpdateDto(
     String nickname

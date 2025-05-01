@@ -2,13 +2,12 @@ package com.bizket.common.member.domain;
 
 import static jakarta.persistence.FetchType.*;
 
-import com.bizket.common.member.dto.MemberDto;
+import com.bizket.insight.dto.MemberPatchDto;
 import com.bizket.common.model.BaseEntity;
 import com.bizket.insight.domain.BusinessPlace;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -71,10 +70,9 @@ public class Member extends BaseEntity {
         }
     }
 
-    public void updateInfo(MemberDto dto) {
+    public void updateInfo(MemberPatchDto dto) {
         if (dto.nickname() != null) this.nickname = dto.nickname();
         if (dto.email() != null) this.email = dto.email();
-        if (dto.profileImageUrl() != null) this.profileImageUrl = dto.profileImageUrl();
         if (dto.instagramAccountId() != null) this.instagramAccountId = dto.instagramAccountId();
         if (dto.threadsAccountId() != null) this.threadsAccountId = dto.threadsAccountId();
     }
