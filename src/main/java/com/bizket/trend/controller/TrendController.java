@@ -50,4 +50,30 @@ public class TrendController {
     public Saturation getSaturation(@PathVariable("kw") String kw) {
         return trendService.calculateSaturation(kw);
     }
+
+    //키워드에 대한 다음 달 예측 검색량
+    @GetMapping("/{kw}/forecast")
+    public ForecastResponse getNextMonthForecast(@PathVariable("kw") String kw) {
+        return trendService.forecastNextMonthSearchVolume(kw);
+    }
+
+    // 키워드에 대한 요일별 검색 비율 (선택적으로 year, month 파라미터 지원)
+    // 파라미터 없으면 1년치 전체 조회
+    @GetMapping("/{kw}/weekday-ratio")
+    public WeekdayRatioResponse getWeekdayRatio(
+            @PathVariable("kw") String kw,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
+    ) {
+        return trendService.fetchWeekdayRatio(kw, year, month);
+    }
+
+    // 키워드에 대한 N개월 전 한 달 동안의 콘텐츠 발행량(근사치)
+    @GetMapping("/{kw}/content-volume")
+    public ContentVolumeResponse getContentVolume(
+            @PathVariable("kw") String kw,
+            @RequestParam(defaultValue = "1") int monthsAgo
+    ) {
+        return trendService.fetchContentVolume(kw, monthsAgo);
+    }
 }
