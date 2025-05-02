@@ -34,13 +34,12 @@
         @Value("${spring.security.oauth2.client.registration.instagram.client-secret}")
         private String clientSecret;
 
-        @Value("${spring.security.oauth2.client.registration.instagram.redirect-uri}")
-        private String redirectUri;
+//        @Value("${spring.security.oauth2.client.registration.instagram.redirect-uri}")
+//        private String redirectUri;
 
-        public AuthResponse loginWithInstagramCode(String rawCode) {
-
+        public AuthResponse loginWithInstagramCode(String rawCode, String redirectUri) {
             String code = cleanAuthorizationCode(rawCode);
-            Map<String, Object> body = requestAccessToken(code);
+            Map<String, Object> body = requestAccessToken(code, redirectUri);
             String accessToken = (String) body.get("access_token");
             String userId = String.valueOf(body.get("user_id"));
 
@@ -77,7 +76,7 @@
             return rawCode.replaceAll("#_$", "");
         }
 
-        private Map<String, Object> requestAccessToken(String code) {
+        private Map<String, Object> requestAccessToken(String code, String redirectUri) {
             String tokenUrl = "https://api.instagram.com/oauth/access_token";
 
             MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
