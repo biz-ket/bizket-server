@@ -3,15 +3,18 @@ package com.bizket.auth.controller;
 import com.bizket.auth.dto.AuthResponse;
 import com.bizket.auth.dto.InstagramCodeRequest;
 import com.bizket.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 
@@ -23,18 +26,34 @@ public class OAuthController {
     @Value("${spring.security.oauth2.client.registration.instagram.client-id}")
     private String clientId;
 
-    @Value("${spring.security.oauth2.client.registration.instagram.redirect-uri}")
-    private String redirectUri;
+    @Value("${spring.security.oauth2.client.registration.instagram.prod-req-origin}")
+    private String prodReqOrigin;
+
+    @Value("${spring.security.oauth2.client.registration.instagram.prod-redirect-uri}")
+    private String prodRedirectUri;
+
+    @Value("${spring.security.oauth2.client.registration.instagram.dev-redirect-uri}")
+    private String devRedirectUri;
 
     @GetMapping("/auth/instagram/login")
     public void login(HttpServletResponse response) throws IOException {
         String state = UUID.randomUUID().toString();  // CSRF 방어용
+
+        String baseUrl = ServletUriComponentsBuilder
+            .fromCurrentContextPath()
+            .build()
+            .toUriString();
+
+        String callbackUri = baseUrl.startsWith(prodReqOrigin)
+            ? prodRedirectUri
+            : devRedirectUri;
+
         String authorizeUrl = UriComponentsBuilder
             .fromHttpUrl("https://www.instagram.com/oauth/authorize")
             .queryParam("enable_fb_login", 0)
             .queryParam("force_authentication", 1)
             .queryParam("client_id", clientId)
-            .queryParam("redirect_uri", redirectUri)
+            .queryParam("redirect_uri", callbackUri)
             .queryParam("response_type", "code")
             .queryParam("scope",
                 "instagram_business_basic," +
@@ -51,6 +70,15 @@ public class OAuthController {
 
     @PostMapping("/auth/instagram/exchange")
     public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
-        return authService.loginWithInstagramCode(request.getCode());
+        String baseUrl = ServletUriComponentsBuilder
+            .fromCurrentContextPath()
+            .build()
+            .toUriString();
+
+        String callbackUri = baseUrl.startsWith(prodReqOrigin)
+            ? prodRedirectUri
+            : devRedirectUri;
+
+        return authService.loginWithInstagramCode(request.getCode(), callbackUri);
     }
 }
