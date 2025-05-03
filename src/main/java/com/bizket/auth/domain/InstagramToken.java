@@ -14,7 +14,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -22,6 +21,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 public class InstagramToken {
+
     @Id
     private Long Id;
 
@@ -42,6 +42,6 @@ public class InstagramToken {
 
     public void renew(String newToken, LocalDateTime newExpiry) {
         this.accessToken = newToken;
-        this.expiresAt  = newExpiry;
+        this.expiresAt = newExpiry;
     }
 }
