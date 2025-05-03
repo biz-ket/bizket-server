@@ -9,6 +9,8 @@ public final class SecurityConstant {
         "/auth/instagram/login",
         "/auth/instagram/exchange",
         "/login/callback",
-        "/trends/**"
+        "/trends/**",
+        "/marketing/contents",
+        "/marketing/contents/*",
     };
 }

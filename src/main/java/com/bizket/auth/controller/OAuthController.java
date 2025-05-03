@@ -3,24 +3,22 @@ package com.bizket.auth.controller;
 import com.bizket.auth.dto.AuthResponse;
 import com.bizket.auth.dto.InstagramCodeRequest;
 import com.bizket.auth.service.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
-import java.io.IOException;
 
 @RequiredArgsConstructor
 @RestController
 public class OAuthController {
+
     private final AuthService authService;
 
     @Value("${spring.security.oauth2.client.registration.instagram.client-id}")

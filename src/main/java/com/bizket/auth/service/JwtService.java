@@ -5,9 +5,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-@Service
 @RequiredArgsConstructor
+@Service
 public class JwtService {
+
     private final JwtTokenProvider jwtTokenProvider;
 
     public String createToken(String memberId) {
