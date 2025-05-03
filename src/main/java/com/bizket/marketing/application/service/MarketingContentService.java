@@ -1,7 +1,7 @@
-package com.bizket.marketing.api.service;
+package com.bizket.marketing.application.service;
 
-import com.bizket.marketing.api.service.response.ContentResponse;
-import com.bizket.marketing.domain.marketingcontent.MarketingContent;
+import com.bizket.marketing.api.dto.response.ContentResponse;
+import com.bizket.marketing.domain.marketingcontent.model.MarketingContent;
 import com.bizket.marketing.domain.marketingcontent.repository.MarketingContentRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
