@@ -1,6 +1,7 @@
-package com.bizket.marketing.domain.marketingkeyword;
+package com.bizket.marketing.domain.marketingkeyword.model;
 
-import com.bizket.marketing.domain.marketingcontent.MarketingContent;
+import com.bizket.marketing.domain.marketingcontent.model.MarketingContent;
+import com.bizket.marketing.domain.marketingkeyword.type.KeywordType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

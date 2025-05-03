@@ -1,7 +1,7 @@
-package com.bizket.marketing.api.service.response;
+package com.bizket.marketing.api.dto.response;
 
-import com.bizket.marketing.domain.hashtag.Hashtag;
-import com.bizket.marketing.domain.marketingcontent.MarketingContent;
+import com.bizket.marketing.domain.hashtag.model.Hashtag;
+import com.bizket.marketing.domain.marketingcontent.model.MarketingContent;
 import java.util.List;
 
 public record ContentResponse(

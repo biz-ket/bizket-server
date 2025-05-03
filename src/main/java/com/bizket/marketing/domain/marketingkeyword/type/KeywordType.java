@@ -1,4 +1,4 @@
-package com.bizket.marketing.domain.marketingkeyword;
+package com.bizket.marketing.domain.marketingkeyword.type;
 
 import lombok.RequiredArgsConstructor;
 

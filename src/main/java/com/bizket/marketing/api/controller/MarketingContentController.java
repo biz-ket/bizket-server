@@ -1,8 +1,8 @@
 package com.bizket.marketing.api.controller;
 
 import com.bizket.common.dto.Response;
-import com.bizket.marketing.api.service.MarketingContentService;
-import com.bizket.marketing.api.service.response.ContentResponse;
+import com.bizket.marketing.api.dto.response.ContentResponse;
+import com.bizket.marketing.application.service.MarketingContentService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

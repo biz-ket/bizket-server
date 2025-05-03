@@ -1,6 +1,6 @@
-package com.bizket.marketing.domain.hashtag;
+package com.bizket.marketing.domain.hashtag.model;
 
-import com.bizket.marketing.domain.marketingcontent.MarketingContent;
+import com.bizket.marketing.domain.marketingcontent.model.MarketingContent;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
