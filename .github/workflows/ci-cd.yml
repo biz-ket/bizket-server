@@ -10,15 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      # 1. 코드 가져오기
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: JDK 21 설정
+      # 2. JDK 21 설정
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Gradle 캐싱
+      # 3. Gradle 캐시
+      - name: Cache Gradle
         uses: actions/cache@v3
         with:
           path: |
@@ -28,60 +32,74 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: application-secret.yml 생성
+      # 4. application-secret.yml 및 application.yml 생성
+      - name: Generate application-secret.yml & application.yml
         run: |
           mkdir -p src/main/resources
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secret.yml
-          echo "${{ secrets.APPLICATION_YML }}" > src/main/resources/application.yml
+          echo "${{ secrets.APPLICATION_YML }}"         > src/main/resources/application.yml
 
-      - name: 테스트 및 REST Docs 생성
+      # 5. 테스트 및 REST Docs 생성 (test 프로필 활성화)
+      - name: Test & generate REST Docs
         run: ./gradlew clean test asciidoctor -Dspring.profiles.active=test
 
-      - name: Gradle 빌드
+      # 6. 실제 빌드 (테스트 제외)
+      - name: Build Jar
         run: ./gradlew build -x test
 
-      - name: Docker 빌드 및 푸시
+      # 7. Docker 이미지 빌드 및 레지스트리에 푸시
+      - name: Build & Push Docker Images
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+          # Java 앱
           docker build --platform linux/amd64 -t "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest" .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest"
-          
+
+          # PyTrends Python 서비스
           docker build --platform linux/amd64 \
             -f pytrends_service/Dockerfile \
             -t "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest" \
             .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest"
 
-      - name: 서버 배포
+      # 8. SSH로 서버 접속 후 컨테이너 재배포
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.HOST_DEV }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.PRIVATE_KEY }}
+          host:       ${{ secrets.HOST_DEV }}
+          username:   ${{ secrets.SSH_USERNAME }}
+          key:        ${{ secrets.PRIVATE_KEY }}
           passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             cd /root
+            # .env에서 KEY=VALUE 형태만 추출
             grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean
-            sudo docker stop bizket-app || true
-            sudo docker rm bizket-app || true
+
+            # Java 서비스
+            sudo docker stop bizket-app   || true
+            sudo docker rm   bizket-app   || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker run --name bizket-app -d \
               -p 8080:8080 \
               --network root-network \
-              --env-file .env \
+              --env-file .env.clean \
               ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest \
               -c "/wait-for-it.sh bizket-db:3306 -- \
-                java \
-                  -Djwt.secret=\"$JWT_SECRET_KEY\" \
-                  -Djwt.access-expiration-ms=\"$JWT_ACCESS_EXPIRATION_TIME\" \
-                  -Djwt.refresh-expiration-ms=\"$JWT_REFRESH_EXPIRATION_TIME\" \
-                  -jar app.jar"
-            sudo docker stop pytrends-app    || true
-            sudo docker rm   pytrends-app    || true
+                java -Djwt.secret=\"$JWT_SECRET_KEY\" \
+                     -Djwt.access-expiration-ms=\"$JWT_ACCESS_EXPIRATION_TIME\" \
+                     -Djwt.refresh-expiration-ms=\"$JWT_REFRESH_EXPIRATION_TIME\" \
+                     -jar app.jar"
+
+            # PyTrends 서비스
+            sudo docker stop pytrends-app  || true
+            sudo docker rm   pytrends-app  || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
             sudo docker run --name pytrends-app -d \
               -p 5000:5000 \
               --network root-network \
+              --env-file .env.clean \
               ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
-            
+
+            # 불필요 이미지 정리
             sudo docker image prune -f
