@@ -12,5 +12,6 @@ public final class SecurityConstant {
         "/trends/**",
         "/marketing/contents",
         "/marketing/contents/*",
+        "/docs/index.html"
     };
 }
