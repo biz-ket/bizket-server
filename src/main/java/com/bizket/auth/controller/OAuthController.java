@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
+import com.bizket.auth.dto.RefreshRequest;
 
 @RequiredArgsConstructor
 @RestController
@@ -78,5 +79,10 @@ public class OAuthController {
             : devRedirectUri;
 
         return authService.loginWithInstagramCode(request.getCode(), callbackUri);
+    }
+
+    @PostMapping("/auth/instagram/refresh")
+    public AuthResponse refresh(@RequestBody RefreshRequest request) {
+        return authService.refreshTokens(request.refreshToken());
     }
 }
