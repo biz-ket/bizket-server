@@ -66,8 +66,6 @@ test {
 
 asciidoctor {
     inputs.dir snippetsDir
-    dependsOn test
-    
     configurations 'asciidoctorExt'
 
     sources {
