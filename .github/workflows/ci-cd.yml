@@ -29,16 +29,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # ← 이 스텝을 테스트 이전에 반드시 둬야 합니다.
+
       - name: Generate application-secret.yml & application.yml
+
         run: |
           mkdir -p src/main/resources
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secret.yml
           echo "${{ secrets.APPLICATION_YML }}"         > src/main/resources/application.yml
 
       - name: Test & generate REST Docs
+
         run: |
           ./gradlew clean test asciidoctor
+
 
       - name: Build Jar
         run: |
@@ -48,11 +51,13 @@ jobs:
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+
           # Java 서비스 이미지
           docker build --platform linux/amd64 -t "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest" .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest"
 
           # PyTrends Python 서비스 이미지
+
           docker build --platform linux/amd64 \
             -f pytrends_service/Dockerfile \
             -t "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest" \
@@ -71,7 +76,8 @@ jobs:
             # .env에서 KEY=VALUE만 걸러내기
             grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean
 
-            ## 1) Java 서비스
+
+            ## 1) Java 앱
             sudo docker stop bizket-app    || true
             sudo docker rm   bizket-app    || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
@@ -81,7 +87,8 @@ jobs:
               --env-file .env.clean \
               ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
 
-            ## 2) PyTrends Python 서비스
+
+            ## 2) PyTrends 서비스
             sudo docker stop pytrends-app   || true
             sudo docker rm   pytrends-app   || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
