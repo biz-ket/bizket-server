@@ -9,116 +9,79 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      SPRING_PROFILES_ACTIVE: dev
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up JDK 21
+      - name: JDK 21 설정
         uses: actions/setup-java@v3
         with:
-          java-version: "21"
-          distribution: temurin
+          java-version: '21'
+          distribution: 'temurin'
 
-      - name: Cache Gradle
+      - name: Gradle 캐싱
         uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Generate application-secret.yml & application.yml
+      - name: application-secret.yml 생성
         run: |
           mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_SECRET_YML }}" > ./src/main/resources/application-secret.yml
+          echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
 
-          cat <<EOF > src/main/resources/application-secret.yml
-          google:
-            cse:
-              key: ${{ secrets.GOOGLE_CSE_KEY }}
-              cx:  ${{ secrets.GOOGLE_CSE_CX }}
+      - name: 테스트 및 REST Docs 생성
+        run: ./gradlew clean test asciidoctor
 
-          jwt:
-            secret: ${{ secrets.JWT_SECRET_KEY }}
-            access-expiration-ms: ${{ secrets.JWT_ACCESS_EXPIRATION_TIME }}
-            refresh-expiration-ms: ${{ secrets.JWT_REFRESH_EXPIRATION_TIME }}
+      - name: Gradle 빌드
+        run: ./gradlew build -x test
 
-          spring:
-            config:
-              activate:
-                on-profile: dev
-
-            datasource:
-              url: jdbc:mysql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DEV_DB_NAME }}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-              username: ${{ secrets.DEV_DB_USERNAME }}
-              password: ${{ secrets.DEV_DB_PASSWORD }}
-              driver-class-name: com.mysql.cj.jdbc.Driver
-
-            jpa:
-              hibernate:
-                ddl-auto: update
-          EOF
-
-          # application.yml 은 기존에 secrets.APPLICATION_YML 에 담긴 그대로
-          echo "${{ secrets.APPLICATION_YML }}" > src/main/resources/application.yml
-
-      - name: Test & generate REST Docs
-        run: |
-          ./gradlew clean test asciidoctor
-
-      - name: Build Jar
-        run: |
-          ./gradlew build -x test
-
-      - name: Build & Push Docker Images
+      - name: Docker 빌드 및 푸시
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-          # Java 서비스 이미지
           docker build --platform linux/amd64 -t "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest" .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest"
-
-          # PyTrends Python 서비스 이미지
+          
           docker build --platform linux/amd64 \
             -f pytrends_service/Dockerfile \
             -t "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest" \
             .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest"
 
-      - name: Deploy to Server
+      - name: 서버 배포
         uses: appleboy/ssh-action@master
         with:
-          host:       ${{ secrets.HOST_DEV }}
-          username:   ${{ secrets.SSH_USERNAME }}
-          key:        ${{ secrets.PRIVATE_KEY }}
+          host: ${{ secrets.HOST_DEV }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
           passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             cd /root
-            # .env.clean 에 KEY=VALUE 행만 남기기
             grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean
-
-            ## 1) Java 서비스
-            sudo docker stop bizket-app  || true
-            sudo docker rm   bizket-app  || true
+            sudo docker stop bizket-app || true
+            sudo docker rm bizket-app || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker run --name bizket-app -d \
               -p 8080:8080 \
               --network root-network \
-              --env-file .env.clean \
+              --env-file .env \
               ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
-
-            ## 2) PyTrends Python 서비스
-            sudo docker stop pytrends-app  || true
-            sudo docker rm   pytrends-app  || true
+              -c "/wait-for-it.sh bizket-db:3306 -- \
+                java \
+                  -Djwt.secret=\"$JWT_SECRET_KEY\" \
+                  -Djwt.access-expiration-ms=\"$JWT_ACCESS_EXPIRATION_TIME\" \
+                  -Djwt.refresh-expiration-ms=\"$JWT_REFRESH_EXPIRATION_TIME\" \
+                  -jar app.jar"
+            sudo docker stop pytrends-app    || true
+            sudo docker rm   pytrends-app    || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
             sudo docker run --name pytrends-app -d \
               -p 5000:5000 \
               --network root-network \
-              --env-file .env.clean \
               ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
-
+            
             sudo docker image prune -f
