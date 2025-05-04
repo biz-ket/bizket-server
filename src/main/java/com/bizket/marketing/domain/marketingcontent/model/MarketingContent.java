@@ -32,7 +32,6 @@ public class MarketingContent {
 
     private String platform;
     private String imageUrl;
-    private String profileText;
     private String generatedText;
     private LocalDateTime createdAt;
     private String clientToken;
@@ -53,13 +52,12 @@ public class MarketingContent {
     private List<MarketingKeyword> keywords = new ArrayList<>();
 
     @Builder
-    private MarketingContent(Long id, String platform, String imageUrl, String profileText, String generatedText,
+    private MarketingContent(Long id, String platform, String imageUrl, String generatedText,
         LocalDateTime createdAt, String clientToken, Member member, List<Hashtag> hashtags,
         List<MarketingKeyword> keywords) {
         this.id = id;
         this.platform = platform;
         this.imageUrl = imageUrl;
-        this.profileText = profileText;
         this.generatedText = generatedText;
         this.createdAt = createdAt;
         this.clientToken = clientToken;
@@ -72,5 +70,5 @@ public class MarketingContent {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
-    
+
 }
