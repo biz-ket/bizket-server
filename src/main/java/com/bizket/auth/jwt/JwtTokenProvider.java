@@ -27,6 +27,10 @@ public class JwtTokenProvider {
     @Value("${jwt.access-expiration-ms}")
     private Long validityInMilliseconds;
 
+    @Value("${jwt.refresh-expiration-ms}")
+    private Long refreshInMilliseconds;
+
+
     private Key signingKey;
 
     @PostConstruct
@@ -34,8 +38,6 @@ public class JwtTokenProvider {
         // Base64 디코딩 후 키 초기화
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         signingKey = Keys.hmacShaKeyFor(keyBytes);
-        log.info("secretKey: {}", secretKey);
-        log.info("validityInMilliseconds: {}", validityInMilliseconds);
     }
 
     /**
@@ -44,14 +46,22 @@ public class JwtTokenProvider {
      * @param memberId 인증된 회원 고유 ID
      * @return 생성된 JWT 토큰 문자열
      */
-    public String createToken(String memberId) {
-        Claims claims = Jwts.claims().setSubject(memberId).build();
+    public String createAccessToken(String memberId) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + validityInMilliseconds);
         return Jwts.builder()
-            .setClaims(claims)
+            .setSubject(memberId)
             .setIssuedAt(now)
-            .setExpiration(expiry)
+            .setExpiration(new Date(now.getTime() + validityInMilliseconds))
+            .signWith(signingKey, SignatureAlgorithm.HS256)
+            .compact();
+    }
+
+    public String createRefreshToken(String memberId) {
+        Date now = new Date();
+        return Jwts.builder()
+            .setSubject(memberId)
+            .setIssuedAt(now)
+            .setExpiration(new Date(now.getTime() + refreshInMilliseconds))
             .signWith(signingKey, SignatureAlgorithm.HS256)
             .compact();
     }
@@ -68,6 +78,15 @@ public class JwtTokenProvider {
             return bearer.substring(7);
         }
         return null;
+    }
+
+    public long getRefreshExpirationMs() {
+        return refreshInMilliseconds;
+    }
+
+    // 필요하다면 accessMs에 대한 getter도 추가
+    public long getAccessExpirationMs() {
+        return validityInMilliseconds;
     }
 
     /**
