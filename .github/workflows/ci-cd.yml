@@ -35,7 +35,7 @@ jobs:
           echo "${{ secrets.APPLICATION_YML }}" > src/main/resources/application.yml
 
       - name: 테스트 및 REST Docs 생성
-        run: ./gradlew clean test asciidoctor
+        run: ./gradlew clean test asciidoctor -Dspring.profiles.active=test
 
       - name: Gradle 빌드
         run: ./gradlew build -x test
