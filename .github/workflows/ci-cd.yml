@@ -31,8 +31,8 @@ jobs:
       - name: application-secret.yml 생성
         run: |
           mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_SECRET_YML }}" > ./src/main/resources/application-secret.yml
-          echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+          echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secret.yml
+          echo "${{ secrets.APPLICATION_YML }}" > src/main/resources/application.yml
 
       - name: 테스트 및 REST Docs 생성
         run: ./gradlew clean test asciidoctor
@@ -69,7 +69,7 @@ jobs:
               -p 8080:8080 \
               --network root-network \
               --env-file .env \
-              ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
+              ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest \
               -c "/wait-for-it.sh bizket-db:3306 -- \
                 java \
                   -Djwt.secret=\"$JWT_SECRET_KEY\" \
