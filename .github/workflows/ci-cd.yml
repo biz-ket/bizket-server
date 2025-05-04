@@ -27,11 +27,16 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
       - name: application-secret.yml 생성
         run: |
           mkdir -p src/main/resources
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > ./src/main/resources/application-secret.yml
           echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+
+      - name: 테스트 및 REST Docs 생성
+        run: ./gradlew clean test asciidoctor
+
       - name: Gradle 빌드
         run: ./gradlew build -x test
 
@@ -46,6 +51,7 @@ jobs:
             -t "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest" \
             .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest"
+
       - name: 서버 배포
         uses: appleboy/ssh-action@master
         with:
