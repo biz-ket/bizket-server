@@ -41,3 +41,5 @@ entrypoint.sh
 
 application.yml
 application-secret.yml
+
+src/main/resources/keystore.p12
