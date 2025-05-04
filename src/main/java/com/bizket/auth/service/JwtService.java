@@ -11,10 +11,6 @@ public class JwtService {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    public String createToken(String memberId) {
-        return jwtTokenProvider.createToken(memberId);
-    }
-
     public boolean validateToken(String token) {
         return jwtTokenProvider.validateToken(token);
     }
