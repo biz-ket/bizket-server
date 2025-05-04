@@ -29,15 +29,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # ← 여기가 바뀐 부분: application-secret.yml 생성 전에 테스트 실행
-      - name: Test & generate REST Docs
-        run: ./gradlew clean test asciidoctor
-
-      - name: Generate application-secret.yml and application.yml
+      - name: Generate application-secret.yml
         run: |
           mkdir -p src/main/resources
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secret.yml
           echo "${{ secrets.APPLICATION_YML }}"         > src/main/resources/application.yml
+
+      - name: Test & generate REST Docs
+        run: ./gradlew clean test asciidoctor
 
       - name: Build Jar
         run: ./gradlew build -x test
@@ -45,8 +44,13 @@ jobs:
       - name: Build & Push Docker Images
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker build --platform linux/amd64 -t "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest" .
+
+          # Java 서비스
+          docker build --platform linux/amd64 \
+            -t "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest" .
           docker push "${{ secrets.DOCKER_USERNAME }}/bizket-server:latest"
+
+          # PyTrends Python 서비스
           docker build --platform linux/amd64 \
             -f pytrends_service/Dockerfile \
             -t "${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest" \
@@ -56,28 +60,28 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host:        ${{ secrets.HOST_DEV }}
-          username:    ${{ secrets.SSH_USERNAME }}
-          key:         ${{ secrets.PRIVATE_KEY }}
-          passphrase:  ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
+          host:       ${{ secrets.HOST_DEV }}
+          username:   ${{ secrets.SSH_USERNAME }}
+          key:        ${{ secrets.PRIVATE_KEY }}
+          passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             cd /root
             grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean
 
-            # Java App
+            ## 1) Java 앱
             sudo docker stop bizket-app    || true
             sudo docker rm   bizket-app    || true
-            sudo docker pull  ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
             sudo docker run --name bizket-app -d \
               -p 8080:8080 \
               --network root-network \
               --env-file .env.clean \
               ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
 
-            # PyTrends Python Service
-            sudo docker stop pytrends-app    || true
-            sudo docker rm   pytrends-app    || true
-            sudo docker pull  ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
+            ## 2) PyTrends 서비스
+            sudo docker stop pytrends-app   || true
+            sudo docker rm   pytrends-app   || true
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-trends-py:latest
             sudo docker run --name pytrends-app -d \
               -p 5000:5000 \
               --network root-network \
