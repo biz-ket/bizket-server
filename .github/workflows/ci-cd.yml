@@ -29,14 +29,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      # ← 여기가 바뀐 부분: application-secret.yml 생성 전에 테스트 실행
+      - name: Test & generate REST Docs
+        run: ./gradlew clean test asciidoctor
+
       - name: Generate application-secret.yml and application.yml
         run: |
           mkdir -p src/main/resources
           echo "${{ secrets.APPLICATION_SECRET_YML }}" > src/main/resources/application-secret.yml
           echo "${{ secrets.APPLICATION_YML }}"         > src/main/resources/application.yml
-
-      - name: Test & generate REST Docs
-        run: ./gradlew clean test asciidoctor
 
       - name: Build Jar
         run: ./gradlew build -x test
