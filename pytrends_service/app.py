@@ -16,6 +16,10 @@ app.register_blueprint(related_bp)   # /related trending
 app.register_blueprint(daily_bp)
 app.register_blueprint(monthly_bp)
 
+@app.route('/health', methods=['GET'])
+def health():
+    return {'status': 'ok'}, 200
+
 if __name__ == '__main__':
     # 환경변수 PY_SERVICE_PORT 없으면 5000
     port = int(os.environ.get('PY_SERVICE_PORT', 5000))
