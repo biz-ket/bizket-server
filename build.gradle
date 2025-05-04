@@ -50,6 +50,9 @@ dependencies {
 
     // JSON 파싱용
     implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    testImplementation 'com.h2database:h2'
+
 }
 
 tasks.named('test') {
