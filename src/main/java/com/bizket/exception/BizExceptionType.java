@@ -20,6 +20,9 @@ public enum BizExceptionType {
     UNAUTHORIZED_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰"),
     UNAUTHORIZED_TOKEN_MISSING(HttpStatus.UNAUTHORIZED, "JWT 토큰이 없습니다."),
     UNAUTHORIZED_NO_AUTHENTICATION_CONTEXT(HttpStatus.UNAUTHORIZED, "인증 정보가 존재하지 않습니다."),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "저장된 Refresh Token이 없습니다."),
+    REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "보유하신 Refresh Token이 일치하지 않습니다."),
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
 
     // Forbidden(403)
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
