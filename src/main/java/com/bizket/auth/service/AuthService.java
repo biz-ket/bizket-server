@@ -42,6 +42,9 @@ public class AuthService {
     @Value("${spring.security.oauth2.client.registration.instagram.client-secret}")
     private String clientSecret;
 
+    /**
+     * Instagram 인가 코드로 로그인 처리
+     */
     public AuthResponse loginWithInstagramCode(String rawCode, String redirectUri) {
         String code = cleanAuthorizationCode(rawCode);
         Map<String, Object> body = requestAccessToken(code, redirectUri);
@@ -94,34 +97,31 @@ public class AuthService {
      */
     @Transactional
     public AuthResponse refreshTokens(String refreshToken) {
-        // 1) 유효성 검사
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw BizExceptionType.UNAUTHORIZED.of("Refresh Token이 유효하지 않습니다");
-        }
-        // 2) 토큰에서 memberId 추출
+//        if (!jwtTokenProvider.validateToken(refreshToken)) {
+//            throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
+//        }
+        jwtTokenProvider.validateToken(refreshToken);
+
         String memberId = jwtTokenProvider.getMemberId(refreshToken);
-        // 3) 저장소에서 RefreshToken 엔티티 조회
         RefreshToken stored = refreshTokenRepository.findById(Long.valueOf(memberId))
-            .orElseThrow(() -> BizExceptionType.UNAUTHORIZED.of("저장된 Refresh Token이 없습니다"));
-        // 4) 토큰 일치 여부 확인
+            .orElseThrow(() -> BizExceptionType.REFRESH_TOKEN_NOT_FOUND.of());
+
         if (!stored.getToken().equals(refreshToken)) {
-            throw BizExceptionType.UNAUTHORIZED.of("보유하신 Refresh Token이 일치하지 않습니다. 다시 로그인해주세요");
+            throw BizExceptionType.REFRESH_TOKEN_MISMATCH.of();
         }
-        // 5) 토큰 만료 여부 확인
         if (stored.getExpiresAt().isBefore(Instant.now())) {
-            throw BizExceptionType.UNAUTHORIZED.of("Refresh Token이 만료되었습니다. 다시 로그인 해주세요");
+            throw BizExceptionType.REFRESH_TOKEN_EXPIRED.of();
         }
-        // 6) 새 Access Token만 발급
+
         String newAccess = jwtTokenProvider.createAccessToken(memberId);
-        // 7) 기존 Refresh Token 유지
         Member member = memberRepository.findById(Long.valueOf(memberId))
-            .orElseThrow();
+            .orElseThrow(() -> BizExceptionType.SERVER_ERROR.of("회원 조회 실패"));
         return new AuthResponse(
             newAccess,
             "Bearer",
-            Long.valueOf(memberId),
+            member.getId(),
             member.getNickname(),
-            refreshToken    // 기존 리프레시 토큰 그대로 반환
+            refreshToken
         );
     }
 
@@ -192,7 +192,7 @@ public class AuthService {
                         .nickname(username)
                         .oauth2Provider(provider)
                         .providerId(userId)
-                        .instagramAccountId(username)   // username 저장
+                        .instagramAccountId(username)
                         .build();
                     return memberRepository.save(newMember);
                 });
