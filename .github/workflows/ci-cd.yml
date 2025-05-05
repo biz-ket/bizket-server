@@ -61,7 +61,11 @@ jobs:
           passphrase: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
           script: |
             cd /root
-            grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean
+            grep -E '^[A-Za-z0-9_]+=.*' .env > .env.clean && mv .env.clean .env
+            
+            echo "${{ secrets.DOCKER_PASSWORD }}" \
+            | sudo docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+            
             sudo docker stop bizket-app || true
             sudo docker rm bizket-app || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/bizket-server:latest
