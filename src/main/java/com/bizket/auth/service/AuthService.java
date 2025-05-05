@@ -90,7 +90,7 @@ public class AuthService {
         );    }
 
     /**
-     * Refresh Token으로 새 Access/Refresh Token을 발급
+     * Refresh Token으로 새 Access Token을 발급
      */
     @Transactional
     public AuthResponse refreshTokens(String refreshToken) {
@@ -102,19 +102,18 @@ public class AuthService {
         String memberId = jwtTokenProvider.getMemberId(refreshToken);
         // 3) 저장소에서 RefreshToken 엔티티 조회
         RefreshToken stored = refreshTokenRepository.findById(Long.valueOf(memberId))
-            .orElseThrow(() -> BizExceptionType.UNAUTHORIZED.of("Refresh Token이 없습니다"));
-        if (!stored.getToken().equals(refreshToken)
-            || stored.getExpiresAt().isBefore(Instant.now())) {
-            throw BizExceptionType.UNAUTHORIZED.of("Refresh Token이 만료되었거나 일치하지 않습니다");
+            .orElseThrow(() -> BizExceptionType.UNAUTHORIZED.of("저장된 Refresh Token이 없습니다"));
+        // 4) 토큰 일치 여부 확인
+        if (!stored.getToken().equals(refreshToken)) {
+            throw BizExceptionType.UNAUTHORIZED.of("보유하신 Refresh Token이 일치하지 않습니다. 다시 로그인해주세요");
         }
-        // 4) 새 토큰 발급
-        String newAccess  = jwtTokenProvider.createAccessToken(memberId);
-        String newRefresh = jwtTokenProvider.createRefreshToken(memberId);
-        // 5) 저장소 업데이트
-        stored.setToken(newRefresh);
-        stored.setExpiresAt(Instant.now().plusMillis(jwtTokenProvider.getRefreshExpirationMs()));
-        refreshTokenRepository.save(stored);
-        // 6) 응답
+        // 5) 토큰 만료 여부 확인
+        if (stored.getExpiresAt().isBefore(Instant.now())) {
+            throw BizExceptionType.UNAUTHORIZED.of("Refresh Token이 만료되었습니다. 다시 로그인 해주세요");
+        }
+        // 6) 새 Access Token만 발급
+        String newAccess = jwtTokenProvider.createAccessToken(memberId);
+        // 7) 기존 Refresh Token 유지
         Member member = memberRepository.findById(Long.valueOf(memberId))
             .orElseThrow();
         return new AuthResponse(
@@ -122,7 +121,7 @@ public class AuthService {
             "Bearer",
             Long.valueOf(memberId),
             member.getNickname(),
-            newRefresh
+            refreshToken    // 기존 리프레시 토큰 그대로 반환
         );
     }
 
