@@ -1,53 +1,43 @@
-package com.bizket.marketing.domain.marketingkeyword.model;
+package com.bizket.marketing.domain.marktingimage.model;
 
 import com.bizket.marketing.domain.marketingcontent.model.MarketingContent;
-import com.bizket.marketing.domain.marketingkeyword.type.KeywordType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
-public class MarketingKeyword {
+public class MarketingImage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private KeywordType type;
-
     @ManyToOne
     @JoinColumn(name = "content_id")
     private MarketingContent content;
 
+    private int sequence;
+    private String url;
+
     @Builder
-    private MarketingKeyword(KeywordType type) {
-        this.type = type;
+    private MarketingImage(String url, int sequence) {
+        this.url = url;
+        this.sequence = sequence;
     }
 
-    public static MarketingKeyword of(KeywordType type) {
-        return new MarketingKeyword(type);
+    public static MarketingImage of(String url, int sequence) {
+        return new MarketingImage(url, sequence);
     }
 
     public void assignContent(MarketingContent content) {
         this.content = content;
     }
-
-    public String getKeyword() {
-        return type.getDescription();
-    }
-
 }
-

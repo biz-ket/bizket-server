@@ -1,4 +1,44 @@
 [[marketing-contents]]
+== [POST] 콘텐츠 생성 - 비로그인 사용자
+
+=== 요청
+
+include::{snippets}/marketing-content-create-guest/http-request.adoc[]
+include::{snippets}/marketing-content-create-guest/request-fields.adoc[]
+
+=== 응답
+
+include::{snippets}/marketing-content-create-guest/http-response.adoc[]
+include::{snippets}/marketing-content-create-guest/response-fields.adoc[]
+
+---
+
+== [POST] 콘텐츠 생성 - 로그인 사용자
+
+=== 요청
+
+include::{snippets}/marketing-content-create-member/http-request.adoc[]
+include::{snippets}/marketing-content-create-member/request-fields.adoc[]
+
+=== 응답
+
+include::{snippets}/marketing-content-create-member/http-response.adoc[]
+include::{snippets}/marketing-content-create-member/response-fields.adoc[]
+
+---
+
+== [POST] 콘텐츠 생성 - 비즈니스 사용자
+
+=== 요청
+
+include::{snippets}/marketing-content-create-business/http-request.adoc[]
+include::{snippets}/marketing-content-create-business/request-fields.adoc[]
+
+=== 응답
+
+include::{snippets}/marketing-content-create-business/http-response.adoc[]
+include::{snippets}/marketing-content-create-business/response-fields.adoc[]
+
 == [GET] 콘텐츠 목록 조회 - 로그인 사용자
 
 === 요청

@@ -33,7 +33,7 @@ class ClovaConfigTest {
             assertThat(config).isNotNull();
             assertThat(config.baseUrl()).isEqualTo(BASE_URL);
             assertThat(config.apiKeyId()).isEqualTo(API_KEY_ID);
-            assertThat(config.apiKey()).isEqualTo(API_KEY);
+            assertThat(config.clovaApiKey()).isEqualTo(API_KEY);
             assertThat(config.model()).isEqualTo(MODEL);
         });
     }

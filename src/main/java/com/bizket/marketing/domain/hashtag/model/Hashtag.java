@@ -9,9 +9,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 @Entity
 public class Hashtag {
 
@@ -24,5 +27,14 @@ public class Hashtag {
 
     @ManyToMany(mappedBy = "hashtags")
     private List<MarketingContent> contents = new ArrayList<>();
+
+    @Builder
+    private Hashtag(String name) {
+        this.name = name;
+    }
+
+    public static Hashtag of(String name) {
+        return new Hashtag(name);
+    }
 
 }
