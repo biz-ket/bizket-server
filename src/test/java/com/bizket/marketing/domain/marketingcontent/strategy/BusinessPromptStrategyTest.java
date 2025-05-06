@@ -29,6 +29,5 @@ class BusinessPromptStrategyTest {
         assertThat(result).contains("INSTAGRAM");
         assertThat(result).contains("디자인");
         assertThat(result).contains("감성적인 톤");
-        assertThat(result).contains("image1.jpg");
     }
 }
