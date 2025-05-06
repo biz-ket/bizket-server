@@ -18,7 +18,8 @@ class MemberPromptStrategyTest {
         MemberMarketingContentRequest request = new MemberMarketingContentRequest(
             "INSTAGRAM",
             "트렌디하고 임팩트 있게 작성해줘",
-            List.of("가격", "디자인")
+            List.of("가격", "디자인"),
+            List.of("image1.jpg", "image2.jpg")
         );
 
         // when

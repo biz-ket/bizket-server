@@ -17,7 +17,8 @@ class BusinessPromptStrategyTest {
         // given
         BusinessMarketingContentRequest request = new BusinessMarketingContentRequest(
             "뷰티하우스", "@beautyhouse", "뷰티", "20대 여성",
-            "INSTAGRAM", "감성적인 톤으로 써줘", List.of("디자인", "퀄리티")
+            "INSTAGRAM", "감성적인 톤으로 써줘", List.of("디자인", "퀄리티"),
+            List.of("image1.jpg", "image2.jpg")
         );
 
         // when
@@ -28,5 +29,6 @@ class BusinessPromptStrategyTest {
         assertThat(result).contains("INSTAGRAM");
         assertThat(result).contains("디자인");
         assertThat(result).contains("감성적인 톤");
+        assertThat(result).contains("image1.jpg");
     }
 }

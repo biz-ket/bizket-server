@@ -15,7 +15,7 @@ public class MemberPromptStrategy implements PromptStrategy {
                 """,
             member.platform(),
             member.prompt(),
-            String.join(",", member.emphasisTags())
+            String.join(", ", member.emphasisTags())
         );
     }
 }

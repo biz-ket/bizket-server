@@ -6,8 +6,10 @@ import java.util.List;
 public interface BaseMarketingContentRequest {
 
     MarketingUserType userType();
-    
+
     String prompt();
 
     List<String> emphasisTags();
+
+    List<String> imageUrls();
 }

@@ -16,7 +16,8 @@ class GuestPromptStrategyTest {
     void createGuestPrompt() {
         // given
         GuestMarketingContentRequest request = new GuestMarketingContentRequest(
-            "짧고 유쾌하게 써줘", List.of("가성비", "디자인")
+            "짧고 유쾌하게 써줘", List.of("가성비", "디자인"),
+            List.of("image1.jpg", "image2.jpg")
         );
 
         // when
@@ -25,5 +26,6 @@ class GuestPromptStrategyTest {
         // then
         assertThat(result).contains("짧고 유쾌하게");
         assertThat(result).contains("가성비, 디자인");
+        assertThat(result).contains("image1.jpg");
     }
 }
