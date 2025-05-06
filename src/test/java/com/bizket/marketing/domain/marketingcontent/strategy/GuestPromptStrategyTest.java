@@ -26,5 +26,6 @@ class GuestPromptStrategyTest {
         // then
         assertThat(result).contains("짧고 유쾌하게");
         assertThat(result).contains("가성비, 디자인");
+        assertThat(result).contains("image1.jpg");
     }
 }
