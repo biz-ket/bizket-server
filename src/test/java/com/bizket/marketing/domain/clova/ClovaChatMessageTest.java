@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ClovaMessageTest {
 
     private final ObjectMapper mapper = new ObjectMapper()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL); // 명시적으로 설정
+        .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
     @DisplayName("null 필드는 직렬화 결과에서 제외된다")
     @Test

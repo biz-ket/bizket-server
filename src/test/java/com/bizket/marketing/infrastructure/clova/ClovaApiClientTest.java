@@ -2,7 +2,7 @@ package com.bizket.marketing.infrastructure.clova;
 
 import com.bizket.config.ClovaConfig;
 import com.bizket.marketing.domain.clova.ClovaContent;
-import com.bizket.marketing.domain.clova.ClovaImageUrl;
+import com.bizket.marketing.domain.clova.ClovaContent.ImageUrl;
 import com.bizket.marketing.domain.clova.ClovaMessage;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +39,7 @@ class ClovaApiClientTest {
             new ClovaMessage("system", List.of(new ClovaContent("text", "너는 마케터야", null))),
             new ClovaMessage("user", List.of(
                 new ClovaContent("text", "문구 생성해줘", null),
-                new ClovaContent("image_url", null, new ClovaImageUrl("image.jpg"))
+                new ClovaContent("image_url", null, new ImageUrl("image.jpg"))
             ))
         );
 
@@ -52,7 +52,7 @@ class ClovaApiClientTest {
             .willReturn(response);
 
         // when
-        String result = client.send(messages);
+        String result = String.valueOf(client.send(messages));
 
         // then
         assertThat(result).contains("some text");

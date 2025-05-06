@@ -19,4 +19,16 @@ public enum MarketingUserType {
     public String createPrompt(BaseMarketingContentRequest prompt) {
         return strategy.createPrompt(prompt);
     }
+
+    public boolean isGuest() {
+        return this == GUEST;
+    }
+
+    public boolean isMember() {
+        return this == MEMBER;
+    }
+
+    public boolean isBusiness() {
+        return this == BUSINESS;
+    }
 }

@@ -6,8 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record ClovaConfig(
     String baseUrl,
     String apiKeyId,
-    String apiKey,
+    String clovaApiKey,
     String model
 ) {
 
 }
+
