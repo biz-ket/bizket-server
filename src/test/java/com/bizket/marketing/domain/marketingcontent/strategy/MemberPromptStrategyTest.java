@@ -13,7 +13,7 @@ class MemberPromptStrategyTest {
 
     @DisplayName("Member 요청으로부터 프롬프트 문장을 생성한다")
     @Test
-    void shouldGeneratePromptForMember() {
+    void createMemberPrompt() {
         // given
         MemberMarketingContentRequest request = new MemberMarketingContentRequest(
             "INSTAGRAM",
