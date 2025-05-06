@@ -1,5 +1,6 @@
 package com.bizket.config;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -22,8 +23,10 @@ class ClovaConfigTest {
             "clova.api.model=" + MODEL
         );
 
+    @DisplayName("Clova 설정 프로퍼티가 정상적으로 바인딩되는지 검증")
     @Test
-    void shouldBindClovaConfigPropertiesCorrectly() {
+    void ClovaConfigBinding() {
+        // when and then
         contextRunner.run(context -> {
             ClovaConfig config = context.getBean(ClovaConfig.class);
 
