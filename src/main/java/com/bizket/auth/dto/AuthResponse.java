@@ -4,12 +4,22 @@ public record AuthResponse(
     String jwtToken,
     String tokenType,
     Long memberId,
-    String nickname
+    String nickname,
+    String refreshToken
 ) {
 
-    public static AuthResponse ofBearer(String token,
+    public static AuthResponse ofBearer(
+        String accessToken,
         Long memberId,
-        String nickname) {
-        return new AuthResponse(token, "Bearer", memberId, nickname);
+        String nickname,
+        String refreshToken
+    ) {
+        return new AuthResponse(
+            accessToken,
+            "Bearer",
+            memberId,
+            nickname,
+            refreshToken
+        );
     }
 }

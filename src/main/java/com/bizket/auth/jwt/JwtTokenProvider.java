@@ -1,9 +1,12 @@
 package com.bizket.auth.jwt;
 
+import com.bizket.exception.BizExceptionType;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -27,6 +31,10 @@ public class JwtTokenProvider {
     @Value("${jwt.access-expiration-ms}")
     private Long validityInMilliseconds;
 
+    @Value("${jwt.refresh-expiration-ms}")
+    private Long refreshInMilliseconds;
+
+
     private Key signingKey;
 
     @PostConstruct
@@ -34,8 +42,6 @@ public class JwtTokenProvider {
         // Base64 디코딩 후 키 초기화
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         signingKey = Keys.hmacShaKeyFor(keyBytes);
-        log.info("secretKey: {}", secretKey);
-        log.info("validityInMilliseconds: {}", validityInMilliseconds);
     }
 
     /**
@@ -44,14 +50,22 @@ public class JwtTokenProvider {
      * @param memberId 인증된 회원 고유 ID
      * @return 생성된 JWT 토큰 문자열
      */
-    public String createToken(String memberId) {
-        Claims claims = Jwts.claims().setSubject(memberId).build();
+    public String createAccessToken(String memberId) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + validityInMilliseconds);
         return Jwts.builder()
-            .setClaims(claims)
+            .setSubject(memberId)
             .setIssuedAt(now)
-            .setExpiration(expiry)
+            .setExpiration(new Date(now.getTime() + validityInMilliseconds))
+            .signWith(signingKey, SignatureAlgorithm.HS256)
+            .compact();
+    }
+
+    public String createRefreshToken(String memberId) {
+        Date now = new Date();
+        return Jwts.builder()
+            .setSubject(memberId)
+            .setIssuedAt(now)
+            .setExpiration(new Date(now.getTime() + refreshInMilliseconds))
             .signWith(signingKey, SignatureAlgorithm.HS256)
             .compact();
     }
@@ -70,6 +84,14 @@ public class JwtTokenProvider {
         return null;
     }
 
+    public long getRefreshExpirationMs() {
+        return refreshInMilliseconds;
+    }
+
+    public long getAccessExpirationMs() {
+        return validityInMilliseconds;
+    }
+
     /**
      * 토큰 유효성 검사 (만료 및 서명 검증)
      *
@@ -83,9 +105,10 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            // 토큰 만료, 서명 불일치 등 예외 발생 시 false
-            return false;
+        }  catch (ExpiredJwtException e) {
+            throw BizExceptionType.UNAUTHORIZED_TOKEN_EXPIRED.of();
+        } catch (JwtException | SignatureException e) {
+            throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
         }
     }
 
@@ -96,12 +119,18 @@ public class JwtTokenProvider {
      * @return 회원 ID 문자열
      */
     public String getMemberId(String token) {
-        Claims claims = Jwts.parser()
-            .setSigningKey(signingKey)
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
-        return claims.getSubject();
+        try {
+            Claims claims = Jwts.parser()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+            return claims.getSubject();
+        } catch (ExpiredJwtException e) {
+            throw BizExceptionType.UNAUTHORIZED_TOKEN_EXPIRED.of();
+        } catch (JwtException | SignatureException e) {
+            throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
+        }
     }
 
     /**
@@ -112,7 +141,6 @@ public class JwtTokenProvider {
      */
     public Authentication getAuthentication(String token) {
         String memberId = getMemberId(token);
-        // 권한 정보가 없는 경우 빈 리스트로 처리
         UsernamePasswordAuthenticationToken auth =
             new UsernamePasswordAuthenticationToken(memberId, token, List.of());
         return auth;

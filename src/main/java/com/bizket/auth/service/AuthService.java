@@ -1,12 +1,16 @@
 package com.bizket.auth.service;
 
 import com.bizket.auth.domain.InstagramToken;
+import com.bizket.auth.domain.RefreshToken;
 import com.bizket.auth.dto.AuthResponse;
 import com.bizket.auth.jwt.JwtTokenProvider;
 import com.bizket.auth.repository.InstagramTokenRepository;
+import com.bizket.auth.repository.RefreshTokenRepository;
 import com.bizket.common.member.domain.Member;
 import com.bizket.common.member.repository.MemberRepository;
 import com.bizket.exception.BizExceptionType;
+import jakarta.transaction.Transactional;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RestTemplate restTemplate = new RestTemplate();
     private final InstagramTokenRepository instagramTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Value("${spring.security.oauth2.client.registration.instagram.client-id}")
     private String clientId;
@@ -37,9 +42,9 @@ public class AuthService {
     @Value("${spring.security.oauth2.client.registration.instagram.client-secret}")
     private String clientSecret;
 
-//        @Value("${spring.security.oauth2.client.registration.instagram.redirect-uri}")
-//        private String redirectUri;
-
+    /**
+     * Instagram 인가 코드로 로그인 처리
+     */
     public AuthResponse loginWithInstagramCode(String rawCode, String redirectUri) {
         String code = cleanAuthorizationCode(rawCode);
         Map<String, Object> body = requestAccessToken(code, redirectUri);
@@ -54,26 +59,70 @@ public class AuthService {
         InstagramToken instaToken = instagramTokenRepository
             .findById(member.getId())
             .orElse(null);
+
         String longLivedToken;
+
         if (instaToken == null) {
-            // 신규 가입: short → long 교환
-            longLivedToken = exchangeToLongLivedToken(accessToken);  // 60일 유효 :contentReference[oaicite:0]{index=0}
+            longLivedToken = exchangeToLongLivedToken(accessToken);
         } else if (instaToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            // 기존 토큰 만료: long → long 리프레시
             longLivedToken = refreshLongLivedToken(
-                instaToken.getAccessToken());  // 60일 연장 :contentReference[oaicite:1]{index=1}
+                instaToken.getAccessToken());
         } else {
-            // 아직 유효한 토큰이 있으면 그대로 재사용
             longLivedToken = instaToken.getAccessToken();
         }
-
         if (instaToken == null || instaToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             saveOrUpdateLongToken(member, longLivedToken);
         }
 
-        String jwt = jwtTokenProvider.createToken(member.getId().toString());
+        String accessJwt  = jwtTokenProvider.createAccessToken(member.getId().toString());
+        String refreshJwt = jwtTokenProvider.createRefreshToken(member.getId().toString());
 
-        return buildAuthResponse(member, jwt);
+        RefreshToken rtEntity = RefreshToken.builder()
+            .memberId(member.getId())
+            .token(refreshJwt)
+            .expiresAt(Instant.now().plusMillis(jwtTokenProvider.getRefreshExpirationMs()))
+            .build();
+        refreshTokenRepository.save(rtEntity);
+
+        return new AuthResponse(
+            accessJwt,
+            "Bearer",
+            member.getId(),
+            member.getNickname(),
+            refreshJwt
+        );    }
+
+    /**
+     * Refresh Token으로 새 Access Token을 발급
+     */
+    @Transactional
+    public AuthResponse refreshTokens(String refreshToken) {
+//        if (!jwtTokenProvider.validateToken(refreshToken)) {
+//            throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
+//        }
+        jwtTokenProvider.validateToken(refreshToken);
+
+        String memberId = jwtTokenProvider.getMemberId(refreshToken);
+        RefreshToken stored = refreshTokenRepository.findById(Long.valueOf(memberId))
+            .orElseThrow(() -> BizExceptionType.REFRESH_TOKEN_NOT_FOUND.of());
+
+        if (!stored.getToken().equals(refreshToken)) {
+            throw BizExceptionType.REFRESH_TOKEN_MISMATCH.of();
+        }
+        if (stored.getExpiresAt().isBefore(Instant.now())) {
+            throw BizExceptionType.REFRESH_TOKEN_EXPIRED.of();
+        }
+
+        String newAccess = jwtTokenProvider.createAccessToken(memberId);
+        Member member = memberRepository.findById(Long.valueOf(memberId))
+            .orElseThrow(() -> BizExceptionType.SERVER_ERROR.of("회원 조회 실패"));
+        return new AuthResponse(
+            newAccess,
+            "Bearer",
+            member.getId(),
+            member.getNickname(),
+            refreshToken
+        );
     }
 
     private String cleanAuthorizationCode(String rawCode) {
@@ -143,18 +192,13 @@ public class AuthService {
                         .nickname(username)
                         .oauth2Provider(provider)
                         .providerId(userId)
-                        .instagramAccountId(username)   // username 저장
+                        .instagramAccountId(username)
                         .build();
                     return memberRepository.save(newMember);
                 });
         } catch (Exception ex) {
             throw BizExceptionType.SERVER_ERROR.of("Member 저장 중 예외 발생: " + ex.getMessage());
         }
-    }
-
-    private AuthResponse buildAuthResponse(Member member, String jwt) {
-        return new AuthResponse(
-            jwt, "Bearer", member.getId(), member.getNickname());
     }
 
     private void saveOrUpdateLongToken(Member member, String longLivedToken) {

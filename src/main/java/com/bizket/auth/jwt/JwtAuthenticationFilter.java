@@ -1,8 +1,10 @@
 package com.bizket.auth.jwt;
 
 import com.bizket.auth.config.SecurityConstant;
+import com.bizket.common.dto.Response;
 import com.bizket.exception.BizException;
 import com.bizket.exception.BizExceptionType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -19,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider tokenProvider;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
@@ -26,10 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // SecurityConfig.WHITE_LIST 를 그대로 참조하거나, 복사해서 사용
         for (String pattern : SecurityConstant.WHITE_LIST) {
             if (new AntPathMatcher().match(pattern, request.getServletPath())) {
-                return true;  // 이 경로는 필터를 아예 실행하지 않음
+                return true;
             }
         }
         return false;
@@ -47,6 +49,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             Authentication auth = tokenProvider.getAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(auth);
+            filterChain.doFilter(request, response);
+
         } catch (ExpiredJwtException ex) {
             SecurityContextHolder.clearContext();
             throw BizExceptionType.UNAUTHORIZED_TOKEN_EXPIRED.of();
@@ -54,13 +58,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.clearContext();
             throw BizExceptionType.UNAUTHORIZED_INVALID_TOKEN.of();
         } catch (BizException ex) {
-            SecurityContextHolder.clearContext();
-            throw ex;
-        } catch (Exception ex) {
-            SecurityContextHolder.clearContext();
-            throw BizExceptionType.SERVER_ERROR.of("토큰 처리 중 오류가 발생했습니다.");
+            sendError(response, ex.getBizExceptionType(), ex.getMessage());
         }
+    }
+    private void sendError(HttpServletResponse response, BizExceptionType type) throws IOException {
+        sendError(response, type, type.getDefaultMessage());
+    }
 
-        filterChain.doFilter(request, response);
+    private void sendError(HttpServletResponse response,
+        BizExceptionType type,
+        String message) throws IOException {
+        SecurityContextHolder.clearContext();
+
+        response.setStatus(type.getHttpStatus().value());
+        response.setContentType("application/json;charset=UTF-8");
+
+        Response<String> body = Response.of("", message);
+        String json = objectMapper.writeValueAsString(body);
+        response.getWriter().write(json);
     }
 }
