@@ -5,8 +5,7 @@ import com.bizket.datalab.dto.monthlyInterest.MonthlyInterestResponseDto;
 import com.bizket.datalab.dto.monthlyInterest.MonthlyInterestDto;
 import com.bizket.datalab.dto.relatedInterest.NaverACResponse;
 import com.bizket.datalab.dto.relatedInterest.RelatedSuggestDto;
-import com.bizket.datalab.dto.totalSearch.TotalSearchResponseDto;
-import com.bizket.trend.dto.Saturation;
+import com.bizket.datalab.dto.saturation.SaturationResponseDto;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -148,23 +147,23 @@ public class NaverTrendService {
     }
 
     // 블로그 기반 포화지수 (블로그 글 수 / 전체 웹문서 검색량)
-    public Saturation calculateBlogSaturation(String keyword) {
+    public SaturationResponseDto calculateBlogSaturation(String keyword) {
         long contentCount = fetchBlogTotalCount(keyword);
-        long searchCount  = fetchWebTotalCount(keyword);  // webkr.json total
+        long searchCount  = fetchWebTotalCount(keyword);
         double index = searchCount > 0
                 ? contentCount * 100.0 / searchCount
                 : 0;
-        return new Saturation(keyword, contentCount, searchCount, index);
+        return new SaturationResponseDto(keyword, contentCount, searchCount, index);
     }
 
     // 뉴스 기반 포화지수 (뉴스 기사 수 / 전체 웹문서 검색량)
-    public Saturation calculateNewsSaturation(String keyword) {
+    public SaturationResponseDto calculateNewsSaturation(String keyword) {
         long contentCount = fetchNewsTotalCount(keyword);
         long searchCount  = fetchWebTotalCount(keyword);
         double index = searchCount > 0
                 ? contentCount * 100.0 / searchCount
                 : 0;
-        return new Saturation(keyword, contentCount, searchCount, index);
+        return new SaturationResponseDto(keyword, contentCount, searchCount, index);
     }
 
     // 전체 웹문서 검색량 조회
