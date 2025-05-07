@@ -1,9 +1,12 @@
 package com.bizket.datalab.controller;
 
 import com.bizket.datalab.dto.forecastInterest.ForecastInterestResponseDto;
+import com.bizket.datalab.dto.forecastInterest.ForecastUserFriendlyResponseDto;
 import com.bizket.datalab.dto.monthlyInterest.MonthlyInterestResponseDto;
 import com.bizket.datalab.dto.relatedInterest.RelatedSuggestDto;
+import com.bizket.datalab.dto.saturation.CombinedSaturationResponseDto;
 import com.bizket.datalab.dto.saturation.SaturationResponseDto;
+import com.bizket.datalab.dto.weekday.WeekdayRatioResponseDto;
 import com.bizket.datalab.service.NaverTrendService;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
@@ -82,24 +85,40 @@ public class NaverTrendController {
         return service.calculateNewsSaturation(kw);
     }
 
+    // 블로그 + 뉴스 포화지수 합침
+    @GetMapping("/{kw}/saturation")
+    public CombinedSaturationResponseDto combinedSaturation(@PathVariable String kw) {
+        return service.calculateCombinedSaturation(kw);
+    }
+
     // 다음 달 관심도 비율 예측
-    // curl -s "http://localhost:8080/datalab/trends/java/forecast" | jq .
-    // 직접 기간 지정 : curl -s "http://localhost:8080/datalab/trends/java/forecast?start=2024-01-01&end=2024-07-31" | jq .
-    @GetMapping("/{kw}/forecast")
-    public ForecastInterestResponseDto forecast(
+    // curl -s "http://localhost:8080/datalab/trends/양파/forecast-friendly" | jq .
+    @GetMapping("/{kw}/forecast-friendly")
+    public ForecastUserFriendlyResponseDto forecastFriendly(
             @PathVariable String kw,
             @RequestParam(required = false) String start,
             @RequestParam(required = false) String end
     ) {
-        LocalDate today     = LocalDate.now();
-        LocalDate lastMonth         = today.minusMonths(1);
-        LocalDate defaultEndDate    = lastMonth.withDayOfMonth(lastMonth.lengthOfMonth());
-        LocalDate defaultStartDate  = defaultEndDate.minusMonths(5).withDayOfMonth(1);
+        String defaultStart = LocalDate.now().minusMonths(5).withDayOfMonth(1).toString();
+        String defaultEnd   = LocalDate.now().toString();
+        return service.forecastNextMonthInterestFriendly(
+                kw,
+                start != null ? start : defaultStart,
+                end   != null ? end   : defaultEnd
+        );
+    }
 
-        String defaultStart = defaultStartDate.toString();
-        String defaultEnd   = defaultEndDate.toString();
-
-        return service.forecastNextMonthInterest(
+     // 요일별 검색 비율
+     // curl -s "http://localhost:8080/datalab/trends/{kw}/weekday-ratio?start=2025-01-01&end=2025-05-06" | jq .
+    @GetMapping("/{kw}/weekday-ratio")
+    public WeekdayRatioResponseDto weekdayRatio(
+            @PathVariable("kw") String kw,
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end
+    ) {
+        String defaultEnd   = LocalDate.now().toString();
+        String defaultStart = LocalDate.now().minusMonths(6).toString();
+        return service.getWeekdayRatio(
                 kw,
                 start != null ? start : defaultStart,
                 end   != null ? end   : defaultEnd
