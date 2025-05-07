@@ -12,6 +12,7 @@ public final class SecurityConstant {
         "/datalab/trends/**",
         "/marketing/contents",
         "/marketing/contents/*",
-        "/docs/index.html"
+        "/docs/index.html",
+        "/business/**"
     };
 }
