@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -43,13 +45,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://bizket.vercel.app", "http://localhost:[*]", "https://localhost:[*]"));                // 모든 Origin 허용
-        config.setAllowedMethods(List.of("*"));                // 모든 HTTP 메서드 허용
-        config.setAllowedHeaders(List.of("*"));                // 모든 헤더 허용
-        config.setAllowCredentials(true);                     // 자격 증명(Cookie 등) 허용 여부
+        config.setAllowedOrigins(List.of("https://bizket.vercel.app", "http://localhost:3000", "https://localhost:3000"));                // 모든 Origin 허용
+        config.setAllowedMethods(List.of("*"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);       // 모든 경로에 적용
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 
