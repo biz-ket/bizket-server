@@ -42,4 +42,5 @@ entrypoint.sh
 application.yml
 application-secret.yml
 
+src/main/resources/firebase/bizket.json
 src/main/resources/keystore.p12
