@@ -3,8 +3,8 @@ package com.bizket.datalab.controller;
 import com.bizket.datalab.dto.forecastInterest.ForecastInterestResponseDto;
 import com.bizket.datalab.dto.monthlyInterest.MonthlyInterestResponseDto;
 import com.bizket.datalab.dto.relatedInterest.RelatedSuggestDto;
+import com.bizket.datalab.dto.saturation.SaturationResponseDto;
 import com.bizket.datalab.service.NaverTrendService;
-import com.bizket.trend.dto.Saturation;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -71,14 +71,14 @@ public class NaverTrendController {
     // 블로그 포화지수
     // curl -s http://localhost:8080/datalab/trends/java/saturation-blog | jq .
     @GetMapping("/{kw}/saturation-blog")
-    public Saturation satBlog(@PathVariable("kw") String kw) {
+    public SaturationResponseDto satBlog(@PathVariable String kw) {
         return service.calculateBlogSaturation(kw);
     }
 
     // 뉴스 포화지수
     // curl -s http://localhost:8080/datalab/trends/java/saturation-news | jq .
     @GetMapping("/{kw}/saturation-news")
-    public Saturation satNews(@PathVariable("kw") String kw) {
+    public SaturationResponseDto satNews(@PathVariable String kw) {
         return service.calculateNewsSaturation(kw);
     }
 
