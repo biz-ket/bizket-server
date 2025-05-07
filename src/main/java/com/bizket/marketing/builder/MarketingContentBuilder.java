@@ -1,9 +1,10 @@
 package com.bizket.marketing.builder;
 
-import com.bizket.marketing.api.dto.request.BaseMarketingContentRequest;
+import com.bizket.marketing.api.dto.request.MarketingContentRequest;
 import com.bizket.marketing.domain.clova.ClovaContent;
 import com.bizket.marketing.domain.clova.ClovaContent.ImageUrl;
 import com.bizket.marketing.domain.clova.ClovaMessage;
+import com.bizket.marketing.domain.marketingcontent.model.MarketingUserType;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -13,13 +14,11 @@ public class MarketingContentBuilder {
 
     private static final String SYSTEM_MESSAGE = "당신은 마케팅 콘텐츠 전문가입니다.";
 
-    public List<ClovaMessage> build(BaseMarketingContentRequest request) {
+    public List<ClovaMessage> build(MarketingContentRequest request) {
         List<ClovaMessage> messages = new ArrayList<>();
         messages.add(createSystemMessage());
-
         messages.addAll(createImageMessages(request.imageUrls()));
         messages.add(createPromptMessage(request));
-
         return messages;
     }
 
@@ -42,14 +41,16 @@ public class MarketingContentBuilder {
             .toList();
     }
 
-    private ClovaMessage createPromptMessage(BaseMarketingContentRequest request) {
+    private ClovaMessage createPromptMessage(MarketingContentRequest request) {
         String formattedPrompt = formatPrompt(request);
         return new ClovaMessage("user", List.of(
             new ClovaContent("text", formattedPrompt, null)
         ));
     }
 
-    private String formatPrompt(BaseMarketingContentRequest request) {
+    private String formatPrompt(MarketingContentRequest request) {
+        MarketingUserType type = MarketingUserType.valueOf(request.userType().toUpperCase());
+        String userPrompt = type.createPrompt(request);
         return String.format("""
             아래 내용을 기반으로 마케팅 문구와 해시태그를 각각 생성해주세요.
             
@@ -65,6 +66,6 @@ public class MarketingContentBuilder {
             2. 해시태그: 감성, 디자인, 트렌디
             
             위의 출력 예시 형식에 맞춰서 꼭 두 항목을 모두 출력해 주세요.
-            """, request.userType().createPrompt(request));
+            """, userPrompt);
     }
 }

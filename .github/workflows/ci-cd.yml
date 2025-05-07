@@ -28,6 +28,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Create Firebase config file
+        run: |
+          mkdir -p ./src/main/resources/firebase
+          echo '${{ secrets.FIREBASE_SECRET_KEY }}' > ./src/main/resources/firebase/bizket.json
+
       - name: application-secret.yml 생성
         run: |
           mkdir -p src/main/resources

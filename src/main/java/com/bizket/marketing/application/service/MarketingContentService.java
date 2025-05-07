@@ -2,8 +2,8 @@ package com.bizket.marketing.application.service;
 
 import com.bizket.common.member.domain.Member;
 import com.bizket.common.member.repository.MemberRepository;
-import com.bizket.marketing.api.dto.request.BaseMarketingContentRequest;
-import com.bizket.marketing.api.dto.request.GuestMarketingContentRequest;
+import com.bizket.firebase.FirebaseStorageService;
+import com.bizket.marketing.api.dto.request.MarketingContentRequest;
 import com.bizket.marketing.api.dto.response.ContentResponse;
 import com.bizket.marketing.api.dto.response.clova.ClovaResult;
 import com.bizket.marketing.builder.MarketingContentBuilder;
@@ -13,18 +13,16 @@ import com.bizket.marketing.domain.hashtag.repository.HashtagRepository;
 import com.bizket.marketing.domain.marketingcontent.model.MarketingContent;
 import com.bizket.marketing.domain.marketingcontent.repository.MarketingContentRepository;
 import com.bizket.marketing.domain.marketingkeyword.model.MarketingKeyword;
-import com.bizket.marketing.domain.marketingkeyword.type.KeywordType;
 import com.bizket.marketing.domain.marktingimage.model.MarketingImage;
 import com.bizket.marketing.infrastructure.clova.ClovaApiClient;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.bizket.exception.BizExceptionType.BAD_REQUEST;
 
-@Slf4j
 @RequiredArgsConstructor
 @Service
 public class MarketingContentService {
@@ -33,10 +31,27 @@ public class MarketingContentService {
     private final ClovaApiClient clovaApiClient;
     private final HashtagRepository hashtagRepository;
     private final MarketingContentRepository marketingContentRepository;
-    private final MemberRepository memberRepository; // 추가됨
+    private final MemberRepository memberRepository;
+    private final FirebaseStorageService firebaseStorageService;
 
-    public ContentResponse createContent(BaseMarketingContentRequest request, Long memberId) {
-        List<ClovaMessage> messages = builder.build(request);
+    public ContentResponse createContent(MarketingContentRequest request, List<MultipartFile> images) {
+        List<String> imageUrls = firebaseStorageService.uploadAll(images);
+
+        MarketingContentRequest enrichedRequest = new MarketingContentRequest(
+            request.userType(),
+            request.memberId(),
+            request.clientToken(),
+            request.brandName(),
+            request.account(),
+            request.industry(),
+            request.prompt(),
+            request.platform(),
+            request.targetAgeGroup(),
+            request.emphasisTags(),
+            imageUrls
+        );
+
+        List<ClovaMessage> messages = builder.build(enrichedRequest);
         ClovaResult clovaResult = clovaApiClient.send(messages);
 
         List<Hashtag> hashtags = clovaResult.hashtags().stream()
@@ -46,32 +61,45 @@ public class MarketingContentService {
                 .orElseGet(() -> hashtagRepository.save(Hashtag.of(tag))))
             .toList();
 
-        MarketingContent content = createContent(request, clovaResult.marketingContent(), hashtags, memberId);
-        buildImages(request.imageUrls(), content);
+        MarketingContent content = MarketingContent.of(
+            enrichedRequest.platform(),
+            enrichedRequest.prompt(),
+            clovaResult.marketingContent(),
+            hashtags
+        );
+
+        switch (enrichedRequest.userType().toUpperCase()) {
+            case "GUEST" -> content.assignClientToken(enrichedRequest.clientToken());
+            case "MEMBER", "BUSINESS" -> {
+                Long memberId = enrichedRequest.memberId();
+                if (memberId == null) {
+                    throw BAD_REQUEST.of("회원 ID가 누락되었습니다.");
+                }
+                Member member = memberRepository.findById(memberId)
+                    .orElseThrow(() -> BAD_REQUEST.of("회원 정보를 찾을 수 없습니다."));
+                content.assignMember(member);
+            }
+            default -> throw BAD_REQUEST.of("지원하지 않는 사용자 유형입니다.");
+        }
+
+        enrichedRequest.emphasisTags().stream()
+            .map(MarketingKeyword::of)
+            .forEach(content::addKeyword);
+
+        buildImages(imageUrls, content);
 
         MarketingContent saved = marketingContentRepository.save(content);
         return ContentResponse.of(saved);
     }
 
-    private MarketingContent createContent(BaseMarketingContentRequest request, String generatedText,
-        List<Hashtag> hashtags, Long memberId) {
-        MarketingContent content = MarketingContent.of(
-            request.platform(),
-            request.prompt(),
-            generatedText,
-            hashtags
-        );
-
-        if (request.userType().isGuest()) {
-            String clientToken = ((GuestMarketingContentRequest) request).clientToken();
-            content.assignClientToken(clientToken);
-        } else if (request.userType().isMember() || request.userType().isBusiness()) {
-            Member member = memberRepository.getReferenceById(memberId);
-            content.assignMember(member);
-        }
-
-        toKeywords(request.emphasisTags()).forEach(content::addKeyword);
-        return content;
+    private void buildImages(List<String> imageUrls, MarketingContent content) {
+        IntStream.range(0, imageUrls.size())
+            .mapToObj(i -> {
+                MarketingImage image = MarketingImage.of(imageUrls.get(i), i);
+                image.assignContent(content);
+                return image;
+            })
+            .forEach(content::addImage);
     }
 
     public List<ContentResponse> getContents(Long memberId, String clientToken) {
@@ -85,19 +113,5 @@ public class MarketingContentService {
         return marketingContentRepository.findById(id)
             .map(ContentResponse::of)
             .orElseThrow(() -> BAD_REQUEST.of("콘텐츠를 찾을 수 없습니다."));
-    }
-
-    private List<MarketingKeyword> toKeywords(List<KeywordType> tags) {
-        return tags.stream().map(MarketingKeyword::of).toList();
-    }
-
-    private void buildImages(List<String> imageUrls, MarketingContent content) {
-        IntStream.range(0, imageUrls.size())
-            .mapToObj(i -> {
-                MarketingImage image = MarketingImage.of(imageUrls.get(i), i);
-                image.assignContent(content);
-                return image;
-            })
-            .forEach(content::addImage);
     }
 }
