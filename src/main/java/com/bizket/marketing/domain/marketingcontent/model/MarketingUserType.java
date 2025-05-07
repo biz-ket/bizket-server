@@ -1,23 +1,61 @@
 package com.bizket.marketing.domain.marketingcontent.model;
 
-import com.bizket.marketing.api.dto.request.BaseMarketingContentRequest;
-import com.bizket.marketing.domain.marketingcontent.strategy.BusinessPromptStrategy;
-import com.bizket.marketing.domain.marketingcontent.strategy.GuestPromptStrategy;
-import com.bizket.marketing.domain.marketingcontent.strategy.MemberPromptStrategy;
-import com.bizket.marketing.domain.marketingcontent.strategy.PromptStrategy;
-import lombok.RequiredArgsConstructor;
+import com.bizket.marketing.api.dto.request.MarketingContentRequest;
+import com.bizket.marketing.domain.marketingkeyword.type.KeywordType;
+import java.util.List;
+import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 public enum MarketingUserType {
 
-    GUEST(new GuestPromptStrategy()),
-    MEMBER(new MemberPromptStrategy()),
-    BUSINESS(new BusinessPromptStrategy());
+    GUEST {
+        @Override
+        public String createPrompt(MarketingContentRequest request) {
+            return """
+                - 사용자 요청: %s
+                - 강조할 키워드: %s
+                """.formatted(
+                request.prompt(),
+                formatTags(request.emphasisTags())
+            );
+        }
+    },
 
-    private final PromptStrategy strategy;
+    MEMBER {
+        @Override
+        public String createPrompt(MarketingContentRequest request) {
+            return """
+                - 브랜드: %s
+                - 요청 내용: %s
+                - 강조 키워드: %s
+                """.formatted(
+                request.brandName(),
+                request.prompt(),
+                formatTags(request.emphasisTags())
+            );
+        }
+    },
 
-    public String createPrompt(BaseMarketingContentRequest prompt) {
-        return strategy.createPrompt(prompt);
+    BUSINESS {
+        @Override
+        public String createPrompt(MarketingContentRequest request) {
+            return """
+                - 브랜드: %s
+                - 요청 내용: %s
+                - 강조 키워드: %s
+                """.formatted(
+                request.brandName(),
+                request.prompt(),
+                formatTags(request.emphasisTags())
+            );
+        }
+    };
+
+    public abstract String createPrompt(MarketingContentRequest request);
+
+    protected String formatTags(List<KeywordType> tags) {
+        return tags.stream()
+            .map(KeywordType::getDescription)
+            .collect(Collectors.joining(", "));
     }
 
     public boolean isGuest() {

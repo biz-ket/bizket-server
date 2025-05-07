@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
 
@@ -20,12 +21,14 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestPartFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.partWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParts;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class MarketingContentControllerTest extends RestDocsSupport {
@@ -41,97 +44,131 @@ class MarketingContentControllerTest extends RestDocsSupport {
     @Test
     void createContentAsGuest() throws Exception {
         ContentResponse response = createResponse(null);
+        given(contentService.createContent(any(), any())).willReturn(response);
 
-        given(contentService.createContent(any(), any()))
-            .willReturn(response);
-
-        String requestJson = """
+        String json = """
             {
                 "userType": "GUEST",
-                "clientToken": "guest-token",
-                "prompt": "가을 감성의 인테리어 소품 추천 문구를 생성해주세요.",
-                "emphasisTags": ["TREND"],
-                "rawImageUrls": ["https://storage.googleapis.com/nangpago-9d371.firebasestorage.app/dc137676-6240-4920-97d3-727c4b7d6d8d_360_F_517535712_q7f9QC9X6TQxWi6xYZZbMmw5cnLMr279.jpg"]
+                "memberId": null,
+                "clientToken": "bizket-test",
+                "brandName": null,
+                "account": null,
+                "industry": null,
+                "targetAgeGroup": null,
+                "prompt": "20대 여성 피부관리 꿀팁",
+                "platform": null,
+                "emphasisTags": ["PRICE", "TREND"],
+                "imageUrls": []
             }
             """;
 
-        mockMvc.perform(post("/marketing/contents")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
+        MockMultipartFile jsonPart = new MockMultipartFile(
+            "request", "request", "application/json", json.getBytes()
+        );
+
+        mockMvc.perform(multipart("/marketing/contents")
+                .file(jsonPart)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
             .andExpect(status().isOk())
             .andDo(document("marketing-content-create-guest",
                 preprocessRequest(prettyPrint()),
                 preprocessResponse(prettyPrint()),
-                requestFields(requestFieldsForGuest()),
+                requestPartFields("request", requestFieldsForGuest()),
+                requestParts(partWithName("request").description("게스트 생성 요청 JSON")),
                 responseFields(singleContentFields(false))
             ));
     }
 
     @DisplayName("로그인 사용자 - 마케팅 콘텐츠 생성")
     @Test
-    void createContentAsMember() throws Exception {
+    void createContentWithFile() throws Exception {
         ContentResponse response = createResponse("instagram");
+        given(contentService.createContent(any(), any())).willReturn(response);
 
-        given(contentService.createContent(any(), any()))
-            .willReturn(response);
-
-        String requestJson = """
+        String json = """
             {
                 "userType": "MEMBER",
                 "memberId": 1,
-                "prompt": "트렌디한 겨울 코디 추천해주세요.",
+                "clientToken": null,
+                "brandName": null,
+                "account": null,
+                "industry": null,
+                "targetAgeGroup": null,
+                "prompt": "디자인 좋은 제품 마케팅 컨텐츠 생성해줘",
                 "platform": "instagram",
-                "emphasisTags": ["PRICE", "QUALITY"],
-                "rawImageUrls": ["https://storage.googleapis.com/nangpago-9d371.firebasestorage.app/dc137676-6240-4920-97d3-727c4b7d6d8d_360_F_517535712_q7f9QC9X6TQxWi6xYZZbMmw5cnLMr279.jpg"]
+                "emphasisTags": ["DESIGN", "QUALITY"],
+                "imageUrls": []
             }
             """;
 
-        mockMvc.perform(post("/marketing/contents")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
+        MockMultipartFile jsonPart = new MockMultipartFile(
+            "request", "request", "application/json", json.getBytes()
+        );
+
+        MockMultipartFile image = new MockMultipartFile(
+            "images", "image.jpg", "image/jpeg", "image data".getBytes()
+        );
+
+        mockMvc.perform(multipart("/marketing/contents")
+                .file(jsonPart)
+                .file(image)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
             .andExpect(status().isOk())
-            .andDo(document("marketing-content-create-member",
+            .andDo(document("marketing-content-create-member-with-file",
                 preprocessRequest(prettyPrint()),
                 preprocessResponse(prettyPrint()),
-                requestFields(requestFieldsForMember()),
+                requestPartFields("request", requestFieldsForMember()),
+                requestParts(
+                    partWithName("request").description("회원 요청 JSON"),
+                    partWithName("images").optional().description("이미지 파일")
+                ),
                 responseFields(singleContentFields(true))
             ));
     }
 
-    @DisplayName("비즈니스 사용자 - 마케팅 콘텐츠 생성")
+    @DisplayName("비즈니스 사용자 - 마케팅 콘텐츠 생성 (멀티파트)")
     @Test
-    void createContentAsBusiness() throws Exception {
+    void createContentAsBusinessMultipart() throws Exception {
         ContentResponse response = createResponse("instagram");
+        given(contentService.createContent(any(), any())).willReturn(response);
 
-        given(contentService.createContent(any(), any()))
-            .willReturn(response);
-
-        String requestJson = """
+        String json = """
             {
-              "userType": "BUSINESS",
-              "memberId": 1,
-              "brandName": "무드앤무드",
-              "account": "moodandmood_official",
-              "industry": "패션",
-              "targetAgeGroup": "20대",
-              "prompt": "봄 시즌 신상품 홍보용 문구를 생성해주세요.",
-              "platform": "instagram",
-              "emphasisTags": ["PRICE"],
-              "rawImageUrls": [
-                "https://storage.googleapis.com/nangpago-9d371.firebasestorage.app/dc137676-6240-4920-97d3-727c4b7d6d8d_360_F_517535712_q7f9QC9X6TQxWi6xYZZbMmw5cnLMr279.jpg",
-                "https://storage.googleapis.com/nangpago-9d371.firebasestorage.app/dc137676-6240-4920-97d3-727c4b7d6d8d_360_F_517535712_q7f9QC9X6TQxWi6xYZZbMmw5cnLMr279.jpg"
-              ]
+                "userType": "BUSINESS",
+                "memberId": 1,
+                "clientToken": null,
+                "brandName": "뷰티살롱",
+                "account": "beautysalon_official",
+                "industry": "뷰티",
+                "targetAgeGroup": "20대",
+                "prompt": "20대 여성 피부관리 꿀팁",
+                "platform": "instagram",
+                "emphasisTags": ["PRICE", "QUALITY"],
+                "imageUrls": []
             }
             """;
 
-        mockMvc.perform(post("/marketing/contents")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
+        MockMultipartFile jsonPart = new MockMultipartFile(
+            "request", "request", "application/json", json.getBytes()
+        );
+
+        MockMultipartFile image = new MockMultipartFile(
+            "images", "image.jpg", "image/jpeg", "image-data".getBytes()
+        );
+
+        mockMvc.perform(multipart("/marketing/contents")
+                .file(jsonPart)
+                .file(image)
+                .contentType(MediaType.MULTIPART_FORM_DATA))
             .andExpect(status().isOk())
             .andDo(document("marketing-content-create-business",
                 preprocessRequest(prettyPrint()),
                 preprocessResponse(prettyPrint()),
-                requestFields(requestFieldsForBusiness()),
+                requestPartFields("request", requestFieldsForBusiness()),
+                requestParts(
+                    partWithName("request").description("비즈니스 콘텐츠 생성 파라미터(JSON)"),
+                    partWithName("images").optional().description("업로드 이미지 파일")
+                ),
                 responseFields(singleContentFields(true))
             ));
     }
@@ -218,62 +255,49 @@ class MarketingContentControllerTest extends RestDocsSupport {
 
     private FieldDescriptor[] requestFieldsForGuest() {
         return new FieldDescriptor[]{
-            fieldWithPath("userType").type(JsonFieldType.STRING)
-                .description("사용자 유형 (GUEST)"),
-            fieldWithPath("clientToken").type(JsonFieldType.STRING)
-                .description("클라이언트 토큰"),
-            fieldWithPath("prompt").type(JsonFieldType.STRING)
-                .description("마케팅 콘텐츠 생성 프롬프트"),
-            fieldWithPath("emphasisTags").type(JsonFieldType.ARRAY)
-                .description("강조할 키워드 태그 목록"),
-            fieldWithPath("rawImageUrls").type(JsonFieldType.ARRAY)
-                .optional()
-                .description("원본 이미지 URL 목록")
+            fieldWithPath("userType").type(JsonFieldType.STRING).description("사용자 유형 (GUEST)"),
+            fieldWithPath("memberId").type(JsonFieldType.NULL).optional().description("회원 ID (게스트는 null)"),
+            fieldWithPath("clientToken").type(JsonFieldType.STRING).description("클라이언트 토큰"),
+            fieldWithPath("brandName").type(JsonFieldType.NULL).optional().description("브랜드명 (게스트는 null)"),
+            fieldWithPath("account").type(JsonFieldType.NULL).optional().description("운영 계정 (게스트는 null)"),
+            fieldWithPath("industry").type(JsonFieldType.NULL).optional().description("산업군 (게스트는 null)"),
+            fieldWithPath("targetAgeGroup").type(JsonFieldType.NULL).optional().description("타겟 연령층 (게스트는 null)"),
+            fieldWithPath("prompt").type(JsonFieldType.STRING).description("마케팅 문구 프롬프트"),
+            fieldWithPath("platform").type(JsonFieldType.NULL).description("콘텐츠 플랫폼"),
+            fieldWithPath("emphasisTags").type(JsonFieldType.ARRAY).description("강조할 키워드 목록"),
+            fieldWithPath("imageUrls").type(JsonFieldType.ARRAY).optional().description("이미지 URL 목록")
         };
     }
 
     private FieldDescriptor[] requestFieldsForMember() {
         return new FieldDescriptor[]{
-            fieldWithPath("userType").type(JsonFieldType.STRING)
-                .description("사용자 유형 (MEMBER)"),
-            fieldWithPath("memberId").type(JsonFieldType.NUMBER)
-                .description("회원 ID"),
-            fieldWithPath("prompt").type(JsonFieldType.STRING)
-                .description("마케팅 문구 프롬프트"),
-            fieldWithPath("platform").type(JsonFieldType.STRING)
-                .description("콘텐츠 플랫폼"),
-            fieldWithPath("emphasisTags").type(JsonFieldType.ARRAY)
-                .description("강조할 키워드 목록"),
-            fieldWithPath("rawImageUrls").type(JsonFieldType.ARRAY)
-                .optional()
-                .description("이미지 URL 목록")
+            fieldWithPath("userType").type(JsonFieldType.STRING).description("사용자 유형 (MEMBER)"),
+            fieldWithPath("memberId").type(JsonFieldType.NUMBER).description("회원 ID"),
+            fieldWithPath("clientToken").type(JsonFieldType.NULL).optional().description("클라이언트 토큰"),
+            fieldWithPath("brandName").type(JsonFieldType.NULL).optional().description("브랜드명"),
+            fieldWithPath("account").type(JsonFieldType.NULL).optional().description("운영 계정"),
+            fieldWithPath("industry").type(JsonFieldType.NULL).optional().description("산업군"),
+            fieldWithPath("targetAgeGroup").type(JsonFieldType.NULL).optional().description("타겟 연령층"),
+            fieldWithPath("prompt").type(JsonFieldType.STRING).optional().description("마케팅 문구 프롬프트"),
+            fieldWithPath("platform").type(JsonFieldType.STRING).description("콘텐츠 플랫폼"),
+            fieldWithPath("emphasisTags").type(JsonFieldType.ARRAY).description("강조할 키워드 목록"),
+            fieldWithPath("imageUrls").type(JsonFieldType.ARRAY).optional().description("이미지 URL 목록")
         };
     }
 
     private FieldDescriptor[] requestFieldsForBusiness() {
         return new FieldDescriptor[]{
-            fieldWithPath("userType").type(JsonFieldType.STRING)
-                .description("사용자 유형 (BUSINESS)"),
-            fieldWithPath("memberId").type(JsonFieldType.NUMBER)
-                .description("회원 ID"),
-            fieldWithPath("brandName").type(JsonFieldType.STRING)
-                .description("브랜드명"),
-            fieldWithPath("account").type(JsonFieldType.STRING)
-                .description("운영 계정"),
-            fieldWithPath("industry").type(JsonFieldType.STRING)
-                .description("산업군"),
-            fieldWithPath("targetAgeGroup").type(JsonFieldType.STRING)
-                .description("타겟 연령층"),
-            fieldWithPath("prompt")
-                .type(JsonFieldType.STRING)
-                .description("마케팅 문구 프롬프트"),
-            fieldWithPath("platform").type(JsonFieldType.STRING)
-                .description("콘텐츠 플랫폼"),
-            fieldWithPath("emphasisTags").type(JsonFieldType.ARRAY)
-                .description("강조할 키워드 목록"),
-            fieldWithPath("rawImageUrls").type(JsonFieldType.ARRAY)
-                .optional()
-                .description("이미지 URL 목록")
+            fieldWithPath("userType").type(JsonFieldType.STRING).description("사용자 유형 (BUSINESS)"),
+            fieldWithPath("memberId").type(JsonFieldType.NUMBER).description("회원 ID"),
+            fieldWithPath("clientToken").type(JsonFieldType.NULL).optional().description("클라이언트 토큰"),
+            fieldWithPath("brandName").type(JsonFieldType.STRING).description("브랜드명"),
+            fieldWithPath("account").type(JsonFieldType.STRING).description("운영 계정"),
+            fieldWithPath("industry").type(JsonFieldType.STRING).description("산업군"),
+            fieldWithPath("targetAgeGroup").type(JsonFieldType.STRING).description("타겟 연령층"),
+            fieldWithPath("prompt").type(JsonFieldType.STRING).description("마케팅 문구 프롬프트"),
+            fieldWithPath("platform").type(JsonFieldType.STRING).description("콘텐츠 플랫폼"),
+            fieldWithPath("emphasisTags").type(JsonFieldType.ARRAY).description("강조할 키워드 목록"),
+            fieldWithPath("imageUrls").type(JsonFieldType.ARRAY).optional().description("이미지 URL 목록")
         };
     }
 
