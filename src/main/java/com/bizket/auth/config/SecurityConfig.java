@@ -1,6 +1,7 @@
 package com.bizket.auth.config;
 
 import com.bizket.auth.jwt.JwtAuthenticationFilter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @RequiredArgsConstructor
 @Configuration
@@ -34,6 +38,19 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("https://bizket.vercel.app", "http://localhost:[*]", "https://localhost:[*]"));                // 모든 Origin 허용
+        config.setAllowedMethods(List.of("*"));                // 모든 HTTP 메서드 허용
+        config.setAllowedHeaders(List.of("*"));                // 모든 헤더 허용
+        config.setAllowCredentials(true);                     // 자격 증명(Cookie 등) 허용 여부
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);       // 모든 경로에 적용
+        return source;
     }
 
     @Bean
