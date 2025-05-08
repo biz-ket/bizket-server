@@ -386,7 +386,7 @@ class MarketingContentControllerTest extends RestDocsSupport {
 
         List<FieldDescriptor> result = new ArrayList<>();
         result.addAll(base);
-        result.add(3, platformField);
+        result.add(2, platformField);
 
         return result.toArray(new FieldDescriptor[0]);
     }
