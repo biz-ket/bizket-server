@@ -16,5 +16,19 @@ public record MarketingContentRequest(
     List<KeywordType> emphasisTags,
     List<String> imageUrls
 ) {
-
+    public MarketingContentRequest withImageUrls(List<String> newImageUrls) {
+        return new MarketingContentRequest(
+            this.userType,
+            this.memberId,
+            this.clientToken,
+            this.brandName,
+            this.account,
+            this.industry,
+            this.targetAgeGroup,
+            this.prompt,
+            this.platform,
+            this.emphasisTags,
+            newImageUrls
+        );
+    }
 }

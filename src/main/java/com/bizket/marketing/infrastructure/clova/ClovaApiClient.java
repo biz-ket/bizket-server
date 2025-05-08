@@ -5,6 +5,7 @@ import com.bizket.marketing.api.dto.request.clova.ClovaRequest;
 import com.bizket.marketing.api.dto.response.clova.ClovaResponse;
 import com.bizket.marketing.api.dto.response.clova.ClovaResult;
 import com.bizket.marketing.domain.clova.ClovaMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,24 +32,38 @@ public class ClovaApiClient {
 
     private final ClovaConfig clovaConfig;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;  // Jackson
+
 
     public ClovaResult send(List<ClovaMessage> messages) {
         HttpHeaders headers = buildHeaders();
         ClovaRequest body = buildRequestBody(messages);
-
-        HttpEntity<ClovaRequest> entity = new HttpEntity<>(body, headers);
         String url = clovaConfig.baseUrl() + "/v3/chat-completions/" + clovaConfig.model();
 
-        ResponseEntity<ClovaResponse> response = restTemplate.exchange(
-            url,
-            HttpMethod.POST,
-            entity,
-            ClovaResponse.class
-        );
-        ClovaResponse responseBody = response.getBody();
+        try {
+            // ① 요청 전체 로깅
+            log.info("▶ Clova 요청 URL       : {}", url);
+            log.info("▶ Clova 요청 헤더     : {}", objectMapper.writeValueAsString(headers.toSingleValueMap()));
+            log.info("▶ Clova 요청 바디(JSON): {}", objectMapper.writeValueAsString(body));
 
-        String content = responseBody.result().message().content();
-        return parseClovaContent(content);
+            // ② API 호출
+            ResponseEntity<ClovaResponse> resp = restTemplate.exchange(
+                url, HttpMethod.POST, new HttpEntity<>(body, headers), ClovaResponse.class);
+
+            // ③ 원시 응답 로깅
+            log.info("◀ Clova 응답 상태코드  : {}", resp.getStatusCode());
+            log.info("◀ Clova 응답 바디(JSON): {}", objectMapper.writeValueAsString(resp.getBody()));
+
+            // ④ content 추출 전 로깅
+            String content = resp.getBody().result().message().content();
+            log.info("◀ Clova 응답 content  : {}", content);
+
+            return parseClovaContent(content);
+
+        } catch (Exception ex) {
+            log.error("Clova API 호출 오류", ex);
+            throw new IllegalStateException("Clova 호출에 실패했습니다.", ex);
+        }
     }
 
     private HttpHeaders buildHeaders() {
@@ -77,12 +92,18 @@ public class ClovaApiClient {
         String marketingContent = null;
         List<String> hashtags = List.of();
 
-        for (String line : lines) {
-            line = line.trim();
-            if (line.startsWith("마케팅 문구:")) {
-                marketingContent = line.replace("마케팅 문구:", "").trim();
-            } else if (line.startsWith("해시태그:")) {
-                String raw = line.replace("해시태그:", "").trim();
+        for (String rawLine : lines) {
+            // 줄 전체에 "마케팅 문구:"가 포함되어 있으면 그 뒤만 꺼내고,
+            if (rawLine.contains("마케팅 문구:")) {
+                marketingContent = rawLine
+                    .substring(rawLine.indexOf("마케팅 문구:") + "마케팅 문구:".length())
+                    .trim();
+            }
+            // 줄 전체에 "해시태그:"가 포함되어 있으면 그 뒤만 꺼내서 #붙이기
+            else if (rawLine.contains("해시태그:")) {
+                String raw = rawLine
+                    .substring(rawLine.indexOf("해시태그:") + "해시태그:".length())
+                    .trim();
                 hashtags = Arrays.stream(raw.split("[#,\\s]+"))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
@@ -92,6 +113,7 @@ public class ClovaApiClient {
         }
 
         if (marketingContent == null) {
+            log.error("▶ parseClovaContent 실패, 받은 content = {}", content);
             throw new IllegalStateException("Clova 응답에서 마케팅 문구를 찾을 수 없습니다.");
         }
 

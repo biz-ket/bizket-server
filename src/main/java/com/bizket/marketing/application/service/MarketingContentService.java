@@ -41,19 +41,7 @@ public class MarketingContentService {
     public ContentResponse createContent(MarketingContentRequest request, List<MultipartFile> images) {
         List<String> imageUrls = firebaseStorageService.uploadAll(images);
 
-        MarketingContentRequest enrichedRequest = new MarketingContentRequest(
-            request.userType(),
-            request.memberId(),
-            request.clientToken(),
-            request.brandName(),
-            request.account(),
-            request.industry(),
-            request.prompt(),
-            request.platform(),
-            request.targetAgeGroup(),
-            request.emphasisTags(),
-            imageUrls
-        );
+        MarketingContentRequest enrichedRequest = request.withImageUrls(imageUrls);
 
         List<ClovaMessage> messages = builder.build(enrichedRequest);
         ClovaResult clovaResult = clovaApiClient.send(messages);
