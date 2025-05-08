@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ContentResponse(
+    Long id,
+    String prompt,
     String generatedContent,
     String platform,
     List<String> hashtags,
@@ -16,6 +18,8 @@ public record ContentResponse(
 
     public static ContentResponse of(MarketingContent content) {
         return new ContentResponse(
+            content.getId(),
+            content.getPrompt(),
             content.getGeneratedContent(),
             content.getPlatform(),
             extractHashtagNames(content),

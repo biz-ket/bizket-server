@@ -303,7 +303,9 @@ class MarketingContentControllerTest extends RestDocsSupport {
 
     private ContentResponse createResponse(String platform) {
         return new ContentResponse(
+            1L,
             "누드톤으로 고급스러운 데일리 룩 ✨ #누드톤메이크업 #직장인메이크업",
+            "부드러운 모카 무스로 완성하는 올해의 컬러! 합리적인 가격에 눈부신 디자인을 경험하세요. 지금 바로 만나보세요!",  // generatedContent
             platform,
             List.of("#여름", "#이벤트"),
             List.of("https://bizket.com/image1.jpg", "https://bizket.com/image2.jpg"),
