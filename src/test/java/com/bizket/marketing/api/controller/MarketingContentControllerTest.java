@@ -317,6 +317,10 @@ class MarketingContentControllerTest extends RestDocsSupport {
         List<FieldDescriptor> base = List.of(
             fieldWithPath("data").type(JsonFieldType.ARRAY)
                 .description("콘텐츠 목록"),
+            fieldWithPath("data[].id").type(JsonFieldType.NUMBER)
+                .description("콘텐츠 ID"),
+            fieldWithPath("data[].prompt").type(JsonFieldType.STRING)
+                .description("요청 프롬프트"),
             fieldWithPath("data[].generatedContent").type(JsonFieldType.STRING)
                 .description("생성된 제목"),
             fieldWithPath("data[].hashtags").type(JsonFieldType.ARRAY)
@@ -350,6 +354,10 @@ class MarketingContentControllerTest extends RestDocsSupport {
 
     private FieldDescriptor[] singleContentFields(boolean withPlatform) {
         List<FieldDescriptor> base = List.of(
+            fieldWithPath("data.id").type(JsonFieldType.NUMBER)
+                .description("콘텐츠 ID"),
+            fieldWithPath("data.prompt").type(JsonFieldType.STRING)
+                .description("요청 프롬프트"),
             fieldWithPath("data").type(JsonFieldType.OBJECT)
                 .description("콘텐츠 데이터"),
             fieldWithPath("data.generatedContent").type(JsonFieldType.STRING)
