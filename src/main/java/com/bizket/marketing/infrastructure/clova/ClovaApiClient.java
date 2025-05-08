@@ -16,6 +16,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -34,7 +37,11 @@ public class ClovaApiClient {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;  // Jackson
 
-
+    @Retryable(
+        value = { java.io.IOException.class, java.lang.IllegalStateException.class },
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 2000)
+    )
     public ClovaResult send(List<ClovaMessage> messages) {
         HttpHeaders headers = buildHeaders();
         ClovaRequest body = buildRequestBody(messages);
@@ -64,6 +71,12 @@ public class ClovaApiClient {
             log.error("Clova API 호출 오류", ex);
             throw new IllegalStateException("Clova 호출에 실패했습니다.", ex);
         }
+    }
+
+    @Recover
+    public ClovaResult recover(RuntimeException e, List<ClovaMessage> messages) {
+        log.error("Clova API 재시도에도 실패했습니다:", e);
+        throw new IllegalStateException("Clova 호출에 실패했습니다.", e);
     }
 
     private HttpHeaders buildHeaders() {

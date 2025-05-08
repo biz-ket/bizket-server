@@ -17,7 +17,7 @@ public class RestTemplateConfig {
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
             .connectTimeout(Duration.ofSeconds(5))  // 이전 setConnectTimeout → connectTimeout
-            .readTimeout(Duration.ofSeconds(5))     // 이전 setReadTimeout    → readTimeout
+            .readTimeout(Duration.ofSeconds(30))     // 이전 setReadTimeout    → readTimeout
             .build();
     }
 }
