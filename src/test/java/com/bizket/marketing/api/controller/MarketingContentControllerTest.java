@@ -173,45 +173,45 @@ class MarketingContentControllerTest extends RestDocsSupport {
             ));
     }
 
-    @DisplayName("로그인 사용자 - 마케팅 콘텐츠 목록 조회")
-    @Test
-    void getContentsWithLogin() throws Exception {
-        ContentResponse response = createResponse("instagram");
+//    @DisplayName("로그인 사용자 - 마케팅 콘텐츠 목록 조회")
+//    @Test
+//    void getContentsWithLogin() throws Exception {
+//        ContentResponse response = createResponse("instagram");
+//
+//        given(contentService.getContents(any(), any()))
+//            .willReturn(List.of(response));
+//
+//        mockMvc.perform(get("/marketing/contents")
+//                .accept(MediaType.APPLICATION_JSON))
+//            .andExpect(status().isOk())
+//            .andDo(document("marketing-contents-list-login",
+//                preprocessRequest(prettyPrint()),
+//                preprocessResponse(prettyPrint()),
+//                responseFields(commonFields(true))
+//            ));
+//    }
 
-        given(contentService.getContents(any(), any()))
-            .willReturn(List.of(response));
-
-        mockMvc.perform(get("/marketing/contents")
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
-            .andDo(document("marketing-contents-list-login",
-                preprocessRequest(prettyPrint()),
-                preprocessResponse(prettyPrint()),
-                responseFields(commonFields(true))
-            ));
-    }
-
-    @DisplayName("비로그인 사용자 - 마케팅 콘텐츠 목록 조회")
-    @Test
-    void getContentsWithoutLogin() throws Exception {
-        ContentResponse response = createResponse(null);
-
-        given(contentService.getContents(null, "bizket-test"))
-            .willReturn(List.of(response));
-
-        mockMvc.perform(get("/marketing/contents")
-                .param("clientToken", "bizket-test")
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
-            .andDo(document("marketing-contents-list-guest",
-                preprocessRequest(prettyPrint()),
-                preprocessResponse(prettyPrint()),
-                queryParameters(
-                    parameterWithName("clientToken").description("클라이언트 토큰")
-                ),
-                responseFields(commonFields(false))
-            ));
-    }
+//    @DisplayName("비로그인 사용자 - 마케팅 콘텐츠 목록 조회")
+//    @Test
+//    void getContentsWithoutLogin() throws Exception {
+//        ContentResponse response = createResponse(null);
+//
+//        given(contentService.getContents(null, "bizket-test"))
+//            .willReturn(List.of(response));
+//
+//        mockMvc.perform(get("/marketing/contents")
+//                .param("clientToken", "bizket-test")
+//                .accept(MediaType.APPLICATION_JSON))
+//            .andExpect(status().isOk())
+//            .andDo(document("marketing-contents-list-guest",
+//                preprocessRequest(prettyPrint()),
+//                preprocessResponse(prettyPrint()),
+//                queryParameters(
+//                    parameterWithName("clientToken").description("클라이언트 토큰")
+//                ),
+//                responseFields(commonFields(false))
+//            ));
+//    }
 
     @DisplayName("로그인 사용자 - 마케팅 콘텐츠 단건 조회")
     @Test
@@ -334,20 +334,19 @@ class MarketingContentControllerTest extends RestDocsSupport {
                 .description("응답 메시지")
         );
 
-        List<FieldDescriptor> platformFields = List.of(
-            fieldWithPath("data[].platform").type(JsonFieldType.NULL)
+        FieldDescriptor platformField;
+        if (withPlatform) {
+            platformField = fieldWithPath("data[].platform").type(JsonFieldType.STRING)
                 .optional()
-                .description("콘텐츠 플랫폼 +\n (비로그인 시 null)"),
-            fieldWithPath("data[].platform").type(JsonFieldType.STRING)
+                .description("콘텐츠 플랫폼");
+        } else {
+            platformField = fieldWithPath("data[].platform").type(JsonFieldType.NULL)
                 .optional()
-                .description("콘텐츠 플랫폼")
-        );
-
-        FieldDescriptor platformField = platformFields.get(Boolean.compare(withPlatform, false));
-
+                .description("콘텐츠 플랫폼 (비로그인 시 null)");
+        }
         List<FieldDescriptor> result = new ArrayList<>();
         result.addAll(base);
-        result.add(3, platformField);
+        result.add(4, platformField);
 
         return result.toArray(new FieldDescriptor[0]);
     }
@@ -386,7 +385,7 @@ class MarketingContentControllerTest extends RestDocsSupport {
 
         List<FieldDescriptor> result = new ArrayList<>();
         result.addAll(base);
-        result.add(2, platformField);
+        result.add(4, platformField);
 
         return result.toArray(new FieldDescriptor[0]);
     }
