@@ -27,7 +27,7 @@ public class InstagramInsightService {
     private final InstagramTokenRepository tokenRepo;
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    public static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * 사용자의 모든 미디어 + 각 미디어 인사이트를 합쳐서 반환
@@ -183,6 +183,42 @@ public class InstagramInsightService {
         JsonNode resp = rt.getForObject(url, JsonNode.class);
         log.debug("→ media response: {}", resp);
         return resp.get("data");
+    }
+
+    public JsonNode getProfileInfo(String jwtToken) {
+        // JWT → Member → InstagramToken → accessToken
+        String accessToken = resolveAccessToken(jwtToken);
+
+        // DB에 저장된 Instagram Account ID
+        Member member = findMemberByToken(jwtToken);
+        String igAccountId = member.getProviderId();
+        if (igAccountId == null || igAccountId.isBlank()) {
+            log.error("Member#{} 에 instagramAccountId 가 없습니다.", member.getId());
+            throw new IllegalStateException("인스타그램 계정이 연결되어 있지 않습니다.");
+        }
+
+        // Graph API 호출: id, username, profile_picture_url
+        String url = UriComponentsBuilder
+            .fromHttpUrl(GRAPH_API_HOST + "/" + igAccountId)
+            .queryParam("fields", "id,username,profile_picture_url")
+            .queryParam("access_token", accessToken)
+            .toUriString();
+
+        log.debug("→ GET {}", url);
+        JsonNode resp = rt.getForObject(url, JsonNode.class);
+        if (resp == null || resp.get("username") == null) {
+            log.error("Instagram 프로필 정보 호출 실패: {}", resp);
+            throw new IllegalStateException("인스타그램 프로필 정보를 가져오지 못했습니다.");
+        }
+
+        // 필요한 필드만 골라서 반환하거나, 그대로 반환해도 무방합니다.
+        ObjectNode profile = MAPPER.createObjectNode();
+        profile.put("instaUsername", resp.get("username").asText());
+        profile.put("profilePictureUrl", resp.has("profile_picture_url")
+            ? resp.get("profile_picture_url").asText()
+            : "");
+
+        return profile;
     }
 
     /**

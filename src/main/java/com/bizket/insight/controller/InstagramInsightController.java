@@ -1,9 +1,13 @@
 package com.bizket.insight.controller;
 
 
+import static com.bizket.insight.service.InstagramInsightService.MAPPER;
+
 import com.bizket.auth.jwt.JwtTokenProvider;
+import com.bizket.common.dto.Response;
 import com.bizket.insight.service.InstagramInsightService;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
@@ -102,7 +106,6 @@ public class InstagramInsightController {
         int followerCount = insightService.getFollowerCount(jwt);
         return ResponseEntity.ok(followerCount);
     }
-
 }
 
 

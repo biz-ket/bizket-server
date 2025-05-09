@@ -19,6 +19,7 @@ import com.bizket.insight.repository.BusinessCategoryRepository;
 import com.bizket.insight.repository.BusinessPlaceRepository;
 import com.bizket.insight.repository.BusinessSubCategoryRepository;
 import com.bizket.insight.service.InstagramInsightService;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,9 +46,18 @@ public class MemberService {
 
     public MemberDto getMyMemberInfo(String jwtToken) {
         Member member = getMemberFromToken(jwtToken);
-        return MemberDto.of(member);
-    }
 
+        String profileImageUrl = null;
+        try {
+            JsonNode profile = instagramInsightService.getProfileInfo(jwtToken);
+            profileImageUrl = profile.has("profilePictureUrl")
+                ? profile.get("profilePictureUrl").asText()
+                : null;
+        } catch (Exception ignored) {
+        }
+
+        return MemberDto.of(member, profileImageUrl);
+    }
     public Object getMyBusinessProfile(String jwtToken) {
         Member member = getMemberFromToken(jwtToken);
         BusinessPlace businessPlace = member.getBusinessPlace();

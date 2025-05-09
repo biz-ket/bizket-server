@@ -26,7 +26,16 @@ public class MemberController {
 
     @GetMapping("/member/me")
     public ResponseEntity<MemberDto> getMyInfo(HttpServletRequest request) {
-        String jwtToken = resolveJwt(request);
+        String jwtToken = null;
+        try {
+            jwtToken = resolveJwt(request);
+        } catch (IllegalArgumentException e) {
+            // JWT 없으면 null 로 반환
+            return ResponseEntity.ok(
+                new MemberDto(null, null, null, null, null, null)
+            );
+        }
+
         MemberDto response = memberService.getMyMemberInfo(jwtToken);
         return ResponseEntity.ok(response);
     }

@@ -13,6 +13,8 @@ public final class SecurityConstant {
         "/marketing/contents",
         "/marketing/contents/*",
         "/docs/index.html",
-        "/business/**"
+        "/business/**",
+        "/instagram/insight/me/profile",
+        "/member/me"
     };
 }
