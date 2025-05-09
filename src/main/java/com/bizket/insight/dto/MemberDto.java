@@ -7,15 +7,17 @@ public record MemberDto(
     String nickname,
     String email,
     String instagramAccountId,
-    String threadsAccountId
+    String threadsAccountId,
+    String profileImageUrl          // ← 새로 추가
 ) {
-    public static MemberDto of(Member member) {
+    public static MemberDto of(Member member, String profileImageUrl) {
         return new MemberDto(
             member.getId(),
             member.getNickname(),
             member.getEmail(),
             member.getInstagramAccountId(),
-            member.getThreadsAccountId()
+            member.getThreadsAccountId(),
+            profileImageUrl
         );
     }
 }
