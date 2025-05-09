@@ -116,7 +116,7 @@ public class ClovaApiClient {
                 .stripLeading();
 
         String marketingContent = rawMarketing
-                .replaceAll("([\\.\\!\\?])\\s+", "$1\n");
+                .replaceAll("([\\.\\!\\?])\\s+", "$1\n\n");
 
         List<String> hashtags = List.of();
         if (!hashtagPart.isBlank()) {
