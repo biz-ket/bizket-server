@@ -18,7 +18,10 @@ public interface MarketingContentRepository extends JpaRepository<MarketingConte
 
     List<MarketingContent> findByMemberIdOrClientToken(Long memberId, String clientToken);
     Page<MarketingContent> findByMemberIdOrClientToken(Long memberId, String clientToken, Pageable pageable);
-
+    List<MarketingContent> findByMemberIdOrClientTokenOrderByCreatedAtDesc(
+        Long memberId,
+        String clientToken
+    );
     // prompt, generatedContent, hashtags.name 에서의 부분일치 페이징 조회
     @Query(
         value = """
@@ -32,6 +35,7 @@ public interface MarketingContentRepository extends JpaRepository<MarketingConte
             OR LOWER(c.generatedContent) LIKE LOWER(CONCAT('%', :keyword, '%'))
             OR LOWER(h.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
           )
+        ORDER BY c.createdAt DESC   
         """,
         countQuery = """
         SELECT COUNT(DISTINCT c)

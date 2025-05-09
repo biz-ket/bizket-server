@@ -102,11 +102,13 @@ public class MarketingContentService {
     }
 
     public List<ContentResponse> getAllContents(Long memberId, String clientToken) {
-        return marketingContentRepository.findByMemberIdOrClientToken(memberId, clientToken)
+        return marketingContentRepository
+            .findByMemberIdOrClientTokenOrderByCreatedAtDesc(memberId, clientToken)
             .stream()
             .map(ContentResponse::of)
             .toList();
     }
+
 
     /**
      * 페이징 + 검색어(prompt, generatedContent, hashtag.name) 처리
