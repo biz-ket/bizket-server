@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -56,25 +57,30 @@ public class MarketingContentController {
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size
     ) {
-        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        boolean hasKeyword = StringUtils.hasText(keyword);
         boolean hasPaging  = (page != null || size != null);
 
         Object result;
+        Sort sortByDateDesc = Sort.by("createdAt").descending();
         if (hasKeyword) {
-            // 1) 검색(페이징 유무 따라)
+            // 검색 + 페이징 유무에 따른 분기
             Pageable pageable = hasPaging
-                ? PageRequest.of(page != null ? page : 0, size != null ? size : 10)
+                ? PageRequest.of(page != null ? page : 0,
+                size != null ? size : 10,
+                sortByDateDesc)
                 : Pageable.unpaged();
             result = contentService.searchContents(memberId, clientToken, keyword.trim(), pageable);
         }
-        else if (!hasPaging) {
-            // 2) 전체 리스트
-            result = contentService.getAllContents(memberId, clientToken);
+        else if (hasPaging) {
+            // 전체 페이징 조회
+            Pageable pageable = PageRequest.of(page != null ? page : 0,
+                size != null ? size : 10,
+                sortByDateDesc);
+            result = contentService.searchContents(memberId, clientToken, null, pageable);
         }
         else {
-            // 3) 전체 페이징
-            Pageable pageable = PageRequest.of(page != null ? page : 0, size != null ? size : 10);
-            result = contentService.searchContents(memberId, clientToken, null, pageable);
+            // 전체 리스트 조회 (정렬 포함)
+            result = contentService.getAllContents(memberId, clientToken);
         }
 
         var body = Response.of(result);
