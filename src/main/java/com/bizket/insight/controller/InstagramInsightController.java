@@ -1,9 +1,13 @@
 package com.bizket.insight.controller;
 
 
+import static com.bizket.insight.service.InstagramInsightService.MAPPER;
+
 import com.bizket.auth.jwt.JwtTokenProvider;
+import com.bizket.common.dto.Response;
 import com.bizket.insight.service.InstagramInsightService;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
@@ -101,6 +105,30 @@ public class InstagramInsightController {
 
         int followerCount = insightService.getFollowerCount(jwt);
         return ResponseEntity.ok(followerCount);
+    }
+
+    /**
+     * 현재 로그인한 사용자의 Instagram ID(username)와 프로필 사진 URL을 반환
+     */
+    @GetMapping("/me/profile")
+    public ResponseEntity<Response<JsonNode>> getInstagramProfile(HttpServletRequest request) {
+        // 1) 요청 헤더에서 JWT 꺼내기
+        String jwt = jwtTokenProvider.resolveToken(request);
+
+        JsonNode profile;
+        if (jwt == null || !jwtTokenProvider.validateToken(jwt)) {
+            // 토큰이 없거나 유효하지 않으면 null 필드로 빈 프로필 객체 생성
+            ObjectNode empty = MAPPER.createObjectNode();
+            empty.putNull("nickname");
+            empty.putNull("profileImageUrl");
+            profile = empty;
+        } else {
+            // 2) Service 호출
+            profile = insightService.getProfileInfo(jwt);
+        }
+
+        // 3) Response.of 로 감싸서 리턴 (200 OK)
+        return ResponseEntity.ok(Response.of(profile));
     }
 
 }
