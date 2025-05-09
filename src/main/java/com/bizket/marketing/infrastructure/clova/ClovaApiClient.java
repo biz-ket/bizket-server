@@ -100,33 +100,35 @@ public class ClovaApiClient {
     }
 
     private ClovaResult parseClovaContent(String content) {
-        String[] lines = content.split("\n");
+        String normalized = content.replace("\\n", "\n");
 
-        String marketingContent = null;
+        String[] parts = normalized.split("\\d+\\.\\s*해시태그:", 2);
+        String marketingPart = parts[0];
+        String hashtagPart  = parts.length > 1 ? parts[1] : "";
+
+        int idx = marketingPart.indexOf("마케팅 문구:");
+        if (idx < 0) {
+            log.error("▶ parseClovaContent 실패, 받은 content = {}", content);
+            throw new IllegalStateException("Clova 응답에서 마케팅 문구를 찾을 수 없습니다.");
+        }
+        String rawMarketing = marketingPart
+                .substring(idx + "마케팅 문구:".length())
+                .stripLeading();
+
+        String marketingContent = rawMarketing
+                .replaceAll("([\\.\\!\\?])\\s+", "$1\n");
+
         List<String> hashtags = List.of();
-
-        for (String rawLine : lines) {
-            // 줄 전체에 "마케팅 문구:"가 포함되어 있으면 그 뒤만 꺼내고,
-            if (rawLine.contains("마케팅 문구:")) {
-                marketingContent = rawLine
-                    .substring(rawLine.indexOf("마케팅 문구:") + "마케팅 문구:".length())
-                    .trim();
-            }
-            // 줄 전체에 "해시태그:"가 포함되어 있으면 그 뒤만 꺼내서 #붙이기
-            else if (rawLine.contains("해시태그:")) {
-                String raw = rawLine
-                    .substring(rawLine.indexOf("해시태그:") + "해시태그:".length())
-                    .trim();
-                hashtags = Arrays.stream(raw.split("[#,\\s]+"))
+        if (!hashtagPart.isBlank()) {
+            hashtags = Arrays.stream(hashtagPart.trim().split("[#,\\s]+"))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .map(tag -> "#" + tag)
                     .collect(Collectors.toList());
-            }
         }
 
-        if (marketingContent == null) {
-            log.error("▶ parseClovaContent 실패, 받은 content = {}", content);
+        if (marketingContent.isBlank()) {
+            log.error("▶ parseClovaContent 실패, content = {}", content);
             throw new IllegalStateException("Clova 응답에서 마케팅 문구를 찾을 수 없습니다.");
         }
 
