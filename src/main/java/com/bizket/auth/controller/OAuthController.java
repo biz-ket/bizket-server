@@ -7,15 +7,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.bizket.auth.dto.RefreshRequest;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 public class OAuthController {
@@ -35,17 +38,35 @@ public class OAuthController {
     private String devRedirectUri;
 
     @GetMapping("/auth/instagram/login")
-    public void login(HttpServletResponse response) throws IOException {
-        String state = UUID.randomUUID().toString();  // CSRF 방어용
+    public void login(
+        @RequestParam(value = "redirect_uri", required = false) String redirectUriParam,
+        HttpServletResponse response
+    ) throws IOException {
+        // CSRF 방어용 state 생성
+        String state = UUID.randomUUID().toString();
 
-        String baseUrl = ServletUriComponentsBuilder
-            .fromCurrentContextPath()
-            .build()
-            .toUriString();
+        // 전달받은 redirect_uri가 있을 경우 우선 사용
+        String callbackUri;
+        if (redirectUriParam != null && !redirectUriParam.isBlank()) {
+            // host 뒤에 '/login/callback' 추가
+            String base = redirectUriParam.endsWith("/")
+                ? redirectUriParam.substring(0, redirectUriParam.length() - 1)
+                : redirectUriParam;
+            callbackUri = base + "/login/callback";
+        } else {
+            // 기존 prod/dev 로직
+            String baseUrl = ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .build()
+                .toUriString();
 
-        String callbackUri = baseUrl.startsWith(prodReqOrigin)
-            ? prodRedirectUri
-            : devRedirectUri;
+            callbackUri = baseUrl.startsWith(prodReqOrigin)
+                ? prodRedirectUri
+                : devRedirectUri;
+        }
+
+        log.info("[★★★★★ /auth/instagram/login] Redirect URI for login: {}", callbackUri);
+
 
         String authorizeUrl = UriComponentsBuilder
             .fromHttpUrl("https://www.instagram.com/oauth/authorize")
@@ -68,17 +89,31 @@ public class OAuthController {
     }
 
     @PostMapping("/auth/instagram/exchange")
-    public AuthResponse exchangeCode(@RequestBody InstagramCodeRequest request) {
-        String baseUrl = ServletUriComponentsBuilder
-            .fromCurrentContextPath()
-            .build()
-            .toUriString();
+    public AuthResponse exchangeCode(
+        @RequestBody InstagramCodeRequest request,
+        @RequestParam(value = "redirect_uri", required = false) String redirectUriParam
+    ) {
+        String code = request.getCode();
 
-        String callbackUri = baseUrl.startsWith(prodReqOrigin)
-            ? prodRedirectUri
-            : devRedirectUri;
+        String callbackUri;
+        if (redirectUriParam != null && !redirectUriParam.isBlank()) {
+            String base = redirectUriParam.endsWith("/")
+                ? redirectUriParam.substring(0, redirectUriParam.length() - 1)
+                : redirectUriParam;
+            callbackUri = base + "/login/callback";
+        } else {
+            String baseUrl = ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .build()
+                .toUriString();
+            callbackUri = baseUrl.startsWith(prodReqOrigin)
+                ? prodRedirectUri
+                : devRedirectUri;
+        }
 
-        return authService.loginWithInstagramCode(request.getCode(), callbackUri);
+        log.info("[★★★★★ /auth/instagram/exchange] Redirect URI for login: {}", callbackUri);
+
+        return authService.loginWithInstagramCode(code, callbackUri);
     }
 
     @PostMapping("/auth/instagram/refresh")
