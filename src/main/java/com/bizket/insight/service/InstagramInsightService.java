@@ -11,6 +11,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -222,12 +223,6 @@ public class InstagramInsightService {
     }
 
     /**
-     * 특정 미디어 ID의 인사이트 조회 (metrics + period)
-     */
-    /**
-     * 특정 미디어 ID의 인사이트 조회 (comments, likes, shares, saved, lifetime 고정)
-     */
-    /**
      * 특정 미디어 ID의 인사이트 조회 (comments, likes, shares, saved, lifetime 고정)
      */
     public JsonNode getMediaInsights(String mediaId, String accessToken) {
@@ -245,14 +240,44 @@ public class InstagramInsightService {
             .toUriString();
         log.debug("→ GET {}", url);
 
-        JsonNode response = rt.getForObject(url, JsonNode.class);
-        if (response == null || response.get("data") == null) {
-            log.error("Fixed Media Insights API 호출 실패 for mediaId={}", mediaId);
-            throw new IllegalStateException("인사이트 데이터를 가져오지 못했습니다.");
+        try {
+            JsonNode response = rt.getForObject(url, JsonNode.class);
+            if (response == null || response.get("data") == null) {
+                log.error("Fixed Media Insights API 호출 실패 for mediaId={}", mediaId);
+                throw new IllegalStateException("인사이트 데이터를 가져오지 못했습니다.");
+            }
+            log.debug("[Fixed Media Insights response] {}", response);
+            return response.get("data");
+        } catch (HttpClientErrorException.BadRequest e) {
+            // Instagram error 응답에서 subcode 파싱
+            try {
+                JsonNode error = MAPPER.readTree(e.getResponseBodyAsString()).path("error");
+                int subcode = error.path("error_subcode").asInt(-1);
+                if (subcode == 2108006) {
+                    log.warn("미디어 {} 는 비즈니스 전환 이전 게시물로, 인사이트를 null로 반환합니다.", mediaId);
+                    // metrics 수만큼 null 값을 가진 ArrayNode 생성
+                    ArrayNode result = MAPPER.createArrayNode();
+                    for (String metric : fixedMetrics) {
+                        ObjectNode metricNode = MAPPER.createObjectNode();
+                        metricNode.put("name", metric);
+                        // values: [{ "value": null }]
+                        ArrayNode values = MAPPER.createArrayNode();
+                        ObjectNode valueNode = MAPPER.createObjectNode();
+                        valueNode.putNull("value");
+                        values.add(valueNode);
+                        metricNode.set("values", values);
+                        result.add(metricNode);
+                    }
+                    return result;
+                }
+            } catch (Exception ignore) {
+                // 파싱 실패 시 그냥 아래에서 예외 다시 던짐
+            }
+            // 그 외 BadRequest 는 그대로 전파
+            throw e;
         }
-        log.debug("[Fixed Media Insights response] {}", response);
-        return response.get("data");
     }
+
 
     /**
      * Instagram 비즈니스 계정의 현재 팔로워 수를 가져온다.
