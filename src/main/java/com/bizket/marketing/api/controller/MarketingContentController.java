@@ -7,7 +7,6 @@ import com.bizket.marketing.application.service.MarketingContentService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -40,7 +39,6 @@ public class MarketingContentController {
         return Response.of(contentService.createContent(request, images));
     }
 
-
 //    @GetMapping
 //    public Response<List<ContentResponse>> getDummyContents(
 //        @RequestParam(required = false) Long memberId,
@@ -58,7 +56,7 @@ public class MarketingContentController {
         @RequestParam(required = false) Integer size
     ) {
         boolean hasKeyword = StringUtils.hasText(keyword);
-        boolean hasPaging  = (page != null || size != null);
+        boolean hasPaging = (page != null || size != null);
 
         Object result;
         Sort sortByDateDesc = Sort.by("createdAt").descending();
@@ -70,15 +68,13 @@ public class MarketingContentController {
                 sortByDateDesc)
                 : Pageable.unpaged();
             result = contentService.searchContents(memberId, clientToken, keyword.trim(), pageable);
-        }
-        else if (hasPaging) {
+        } else if (hasPaging) {
             // 전체 페이징 조회
             Pageable pageable = PageRequest.of(page != null ? page : 0,
                 size != null ? size : 10,
                 sortByDateDesc);
             result = contentService.searchContents(memberId, clientToken, null, pageable);
-        }
-        else {
+        } else {
             // 전체 리스트 조회 (정렬 포함)
             result = contentService.getAllContents(memberId, clientToken);
         }

@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import static com.bizket.exception.BizExceptionType.BAD_REQUEST;
@@ -94,54 +94,49 @@ public class MarketingContentService {
             .forEach(content::addImage);
     }
 
-    public List<ContentResponse> getContents(Long memberId, String clientToken) {
-        return marketingContentRepository.findByMemberIdOrClientToken(memberId, clientToken)
-            .stream()
-            .map(ContentResponse::of)
-            .toList();
-    }
-
     public List<ContentResponse> getAllContents(Long memberId, String clientToken) {
-        return marketingContentRepository
-            .findByMemberIdOrClientTokenOrderByCreatedAtDesc(memberId, clientToken)
-            .stream()
-            .map(ContentResponse::of)
-            .toList();
+        if (memberId != null) {
+            return marketingContentRepository.findByMemberIdOrderByCreatedAtDesc(memberId)
+                .stream()
+                .map(ContentResponse::of)
+                .toList();
+        } else if (StringUtils.hasText(clientToken)) {
+            return marketingContentRepository.findByClientTokenOrderByCreatedAtDesc(clientToken)
+                .stream()
+                .map(ContentResponse::of)
+                .toList();
+        } else {
+            throw BAD_REQUEST.of("memberId 또는 clientToken 중 하나는 필수입니다.");
+        }
     }
 
-
-    /**
-     * 페이징 + 검색어(prompt, generatedContent, hashtag.name) 처리
-     * - pageable.isUnpaged(): page/size 파라미터가 없었다고 간주
-     */
     public Page<ContentResponse> searchContents(
         Long memberId,
         String clientToken,
         String keyword,
         Pageable pageable
     ) {
-        // 전체 리스트 모드
-        if (pageable.isUnpaged()) {
-            // 검색어 없는 전체
-            if (keyword == null || keyword.isBlank()) {
-                List<ContentResponse> list = getAllContents(memberId, clientToken);
-                return new PageImpl<>(list);
-            }
-            // 검색어 있는 전체
-            Page<MarketingContent> filtered =
-                marketingContentRepository.searchByPromptContentOrHashtag(
-                    memberId, clientToken, keyword, Pageable.unpaged());
-            return filtered.map(ContentResponse::of);
+        if (memberId == null && (clientToken == null || clientToken.isBlank())) {
+            throw BAD_REQUEST.of("memberId 또는 clientToken 중 하나는 필수입니다.");
         }
 
-        // 페이징 모드
-        if (keyword == null || keyword.isBlank()) {
-            return marketingContentRepository
-                .findByMemberIdOrClientToken(memberId, clientToken, pageable)
+        boolean hasKeyword = StringUtils.hasText(keyword);
+
+        if (!hasKeyword) {
+            if (memberId != null) {
+                return marketingContentRepository.findByMemberId(memberId, pageable)
+                    .map(ContentResponse::of);
+            } else {
+                return marketingContentRepository.findByClientToken(clientToken, pageable)
+                    .map(ContentResponse::of);
+            }
+        }
+
+        if (memberId != null) {
+            return marketingContentRepository.searchByMemberIdAndKeyword(memberId, keyword, pageable)
                 .map(ContentResponse::of);
         } else {
-            return marketingContentRepository
-                .searchByPromptContentOrHashtag(memberId, clientToken, keyword, pageable)
+            return marketingContentRepository.searchByClientTokenAndKeyword(clientToken, keyword, pageable)
                 .map(ContentResponse::of);
         }
     }
