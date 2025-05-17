@@ -124,6 +124,11 @@ public class MemberService {
     public void createBusinessPlace(String jwt, BusinessProfileDto dto) {
         Member member = getMemberFromToken(jwt);
 
+        // 이미 사업장이 있으면 중복 생성 금지
+        if (member.getBusinessPlace() != null) {
+            throw new IllegalStateException("이미 등록된 사업장이 있습니다.");
+        }
+
         // (1) 연령대
         CustomerAgeGroup ageGroup = dto.customerAgeGroupId() == null ? null :
             ageRepo.findById(dto.customerAgeGroupId())
