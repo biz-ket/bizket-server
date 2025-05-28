@@ -19,6 +19,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -53,26 +55,11 @@ public class AuthService {
 
         Map<String, Object> userInfo = fetchInstagramUserInfo(accessToken);
         String username = (String) userInfo.get("username");
-        String provider = "instagram";
-        Member member = findOrCreateMember(userId, username, provider);
+        Member member = findOrCreateMember(userId, username, "instagram");
 
-        InstagramToken instaToken = instagramTokenRepository
-            .findById(member.getId())
-            .orElse(null);
-
-        String longLivedToken;
-
-        if (instaToken == null) {
-            longLivedToken = exchangeToLongLivedToken(accessToken);
-        } else if (instaToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            longLivedToken = refreshLongLivedToken(
-                instaToken.getAccessToken());
-        } else {
-            longLivedToken = instaToken.getAccessToken();
-        }
-        if (instaToken == null || instaToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            saveOrUpdateLongToken(member, longLivedToken);
-        }
+        // 로그인 시에도 토큰 상태 관계없이 매번 갱신
+        String longLivedToken = exchangeToLongLivedToken(accessToken);
+        saveOrUpdateLongToken(member, longLivedToken);
 
         String accessJwt  = jwtTokenProvider.createAccessToken(member.getId().toString());
         String refreshJwt = jwtTokenProvider.createRefreshToken(member.getId().toString());
@@ -90,7 +77,8 @@ public class AuthService {
             member.getId(),
             member.getNickname(),
             refreshJwt
-        );    }
+        );
+    }
 
     /**
      * Refresh Token으로 새 Access Token을 발급
@@ -160,22 +148,52 @@ public class AuthService {
     }
 
     private Map<String, Object> fetchInstagramUserInfo(String accessToken) {
-        String userInfoUrl = UriComponentsBuilder
+        String url = UriComponentsBuilder
             .fromHttpUrl("https://graph.instagram.com/me")
             .queryParam("fields", "id,username")
             .queryParam("access_token", accessToken)
             .toUriString();
+
         try {
-            ResponseEntity<Map> userResp = restTemplate.getForEntity(userInfoUrl, Map.class);
-            if (!userResp.getStatusCode().is2xxSuccessful() || userResp.getBody() == null) {
-                throw BizExceptionType.SERVER_ERROR.of("Instagram 사용자 정보 조회 실패");
-            }
-            return userResp.getBody();
+            return restTemplate.getForObject(url, Map.class);
         } catch (HttpClientErrorException e) {
-            throw BizExceptionType.UNAUTHORIZED.of("Instagram 사용자 정보 조회 실패: " + e.getResponseBodyAsString());
-        } catch (Exception e) {
-            throw BizExceptionType.SERVER_ERROR.of("Instagram 사용자 정보 조회 중 오류: " + e.getMessage());
+            String body = e.getResponseBodyAsString();
+            if (body.contains("\"code\":190")) {
+                // 1) 토큰 만료 감지 → 갱신
+                String newToken = refreshLongLivedToken(accessToken);
+                // 2) 저장소 업데이트
+                updateInstagramTokenInRepo(newToken);
+                // 3) 새 토큰으로 재요청
+                String retryUrl = url.replace(accessToken, newToken);
+                return restTemplate.getForObject(retryUrl, Map.class);
+            }
+            throw BizExceptionType.UNAUTHORIZED.of("Instagram 조회 실패: " + body);
         }
+    }
+
+    private Long getCurrentMemberId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw BizExceptionType.UNAUTHORIZED.of("인증 정보가 없습니다.");
+        }
+        // JWT 토큰을 발급할 때 memberId를 principal(name)로 사용했다면 그대로 꺼내면 됩니다.
+        String memberIdStr = auth.getName();
+        try {
+            return Long.valueOf(memberIdStr);
+        } catch (NumberFormatException e) {
+            throw BizExceptionType.UNAUTHORIZED.of("올바르지 않은 인증 정보입니다.");
+        }
+    }
+
+    /**
+     * 만료된 Long-Lived 토큰을 갱신한 뒤, DB에 업데이트
+     */
+    private void updateInstagramTokenInRepo(String newToken) {
+        Long memberId = getCurrentMemberId();
+        instagramTokenRepository.findById(memberId)
+            .ifPresent(tokenEntity ->
+                tokenEntity.renew(newToken, LocalDateTime.now().plusDays(60))
+            );
     }
 
     private Member findOrCreateMember(String userId, String username, String provider) {
